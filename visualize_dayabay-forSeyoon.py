@@ -15,9 +15,9 @@ import matplotlib.pyplot as plt
 # <codecell>
 
 # Autoencoded
-fn = '/home/pjsadows/cloud/desktop/dayabay/train-targets.pkl'
+fn = './train-targets.pkl'
 X = pkl.load(open(fn,'r'))
-fn = '/home/pjsadows/cloud/desktop/dayabay/train-inference.pkl'
+fn = './train-inference.pkl'
 Xae = pkl.load(open(fn,'r'))
 print X.shape, Xae.shape
 # Raw data loaded from dataset_root.
@@ -60,7 +60,7 @@ y = np.hstack([y, 3*np.ones(Xa_prompt.shape[0]), 4*np.ones(Xa_delayed.shape[0])]
 
 from pylab import *
 import imp
-tsne = imp.load_source('tsne', '/home/pjsadows/local/tsne.py')
+tsne = imp.load_source('tsne', './tsne_python/tsne.py')
 #Y = tsne.tsne(X, no_dims, perplexity)
 Xtsne = tsne.tsne(X.astype('float64'), 2, 50, 20.0)
 
