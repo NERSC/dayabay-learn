@@ -35,7 +35,8 @@ import neon.params
 #import dataset_hdf5
 #import dataset_root
 import os
-from neon2.datasets import dayabay
+# from neon2.datasets import dayabay
+import dayabay
 from neon2.experiments.predict import PredictExperiment
 
 #logging = {'level': 20, 'format': '%(asctime)-15s %(levelname)s:%(module)s - %(message)s'}

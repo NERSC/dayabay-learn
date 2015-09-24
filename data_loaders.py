@@ -12,6 +12,10 @@ def load_dayabaysingle(path_to_h5, validation=True, cross_validate=False, normal
     nclass = 5
     num_ex = X.shape[0]
     num_tr = int( (1-test_prop) * num_ex)
+
+
+    if normalize:
+        pass
     #data is shuffled before being written to hdf5, but if we continually are using
     #the same dataset we might want to do some shuffling with a seed
     if not seed:
