@@ -129,7 +129,7 @@ def run(spearminthp):
                                    dataset=dataset,
                                    metrics=metrics,
                                    timing=True,
-                                   predictions=['validation'],
+                                   predictions=['train'],
                                    layeridx = 3,
                                    ) 
     # Experiment result is dict: result[metric_set][metric_name]
