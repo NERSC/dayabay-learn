@@ -36,13 +36,13 @@ import neon.params
 #import dataset_root
 import os
 # from neon2.datasets import dayabay
-import dayabay
+from dayabay_dataset_code import dayabay
 from neon2.experiments.predict import PredictExperiment
-
+import sys
 #logging = {'level': 20, 'format': '%(asctime)-15s %(levelname)s:%(module)s - %(message)s'}
 logging.basicConfig(level=20)
 logger = logging.getLogger()
-
+print sys.argv[1]
 def create_model(hp):
     nin = 192
     weight_init = neon.params.AutoUniformValGen()
@@ -89,7 +89,7 @@ def create_model(hp):
     model = MLP(num_epochs=hp['max_epochs'],
                 batch_size=hp['batch_size'],
                 layers=layers, 
-                serialized_path='./%s.prm' % hp['string'],
+                serialized_path='./saved_params/%s.prm' % hp['string'],
                 serialize_schedule=10,
                 #deserialized_path='./debug.prm', overwrite_list=['num_epochs'],
                 )
@@ -112,8 +112,11 @@ def run(spearminthp):
     # Train model.
     model = create_model(hp)
     backend = gen_backend(rng_seed=0)
-    h5file = '/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5' # 5 classes of 20000 examples each
-    dataset = dayabay.Imageset(h5file=h5file, mode='c', save_dir='./', autoencode_flag=True)
+    h5file = sys.argv[1]
+    print h5file
+    #h5file = './jialin_data/small_dayabay1.h5'
+   # h5file = '/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5' # 5 classes of 20000 examples each
+    dataset = dayabay.Imageset(h5file=h5file, mode='c', save_dir='/global/homes/r/racah/projects/dayabay-learn/intel_data/pkls', autoencode_flag=True)
     #metrics = {'train':[LogLossSum(), MisclassRate()], 'validation':[LogLossMean()], 'test':[]}
     #metrics = {'train':[LogLossMean(), MisclassRate()], 'validation':[LogLossMean(), MisclassRate()], 'test':[]}
     metrics = {'train':[MisclassRate(), MSE()], 'validation':[MisclassRate(), MSE()], 'test':[]}

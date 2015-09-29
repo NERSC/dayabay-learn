@@ -200,7 +200,7 @@ class Imageset(Dataset):
             (self.nrec, self.macro_size, experiment.model.batch_size)
         nmacros = self.nrec / self.macro_size
 
-        partition = {'train':1, 'valid':0, 'test':0}
+        partition = {'train':1, 'valid':0.2, 'test':0.2}
 
         self.ntrain = int(nmacros * partition['train']) # ntrain is in number of macrobatches
         self.train_start = 0
