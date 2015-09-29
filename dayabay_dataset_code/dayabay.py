@@ -140,7 +140,7 @@ class Imageset(Dataset):
         opt_param(self, ['repo_path'], './')
         opt_param(self, ['nrec'], None) # Number of records to use.     
         opt_param(self, ['autoencode_flag'], False) # Return X,X pairs instead of X,y 
-    
+        opt_param(self, ['intel'], False)
         opt_param(self, ['preprocess_done'], False)
         opt_param(self, ['mean_norm', 'unit_norm'], False)
 
@@ -182,8 +182,15 @@ class Imageset(Dataset):
         3) Train,test split.
         '''
         f = h5py.File(self.h5file, 'r')
-        self.nfeatures = f['inputs'].shape[1] - 1
-        self.ntargets = 3 #f['targets'].shape[1]
+        if self.intel:
+            self.nfeatures = f['inputs'].shape[1] - 1
+            self.ntargets = 3 #f['targets'].shape[1]
+
+        else:
+            self.nfeatures = f['inputs'].shape[1]
+            self.ntargets = f['targets'].shape[1]
+
+
         if self.autoencode_flag:
             self.ntargets = self.nfeatures    
 
@@ -200,7 +207,10 @@ class Imageset(Dataset):
             (self.nrec, self.macro_size, experiment.model.batch_size)
         nmacros = self.nrec / self.macro_size
 
-        partition = {'train':1, 'valid':0.2, 'test':0.2}
+        if self.intel:
+            partition = {'train': 1, 'valid': 0.2, 'test': 0.2}
+        else:
+            partition = {'train': 0.6, 'valid': 0.2, 'test': 0.2}
 
         self.ntrain = int(nmacros * partition['train']) # ntrain is in number of macrobatches
         self.train_start = 0
@@ -228,8 +238,13 @@ class Imageset(Dataset):
         s_idx = self.macro_idx * self.macro_size
         e_idx = (self.macro_idx + 1) * self.macro_size
         macro_batch = {}
-        macro_batch['inputs'] = file_handle['inputs'][s_idx:e_idx, :-1] #b/c Jialin's data has label last column
-        macro_batch['targets'] = file_handle['inputs'][s_idx:e_idx, -1] #jialin's label
+
+        if self.intel:
+            macro_batch['inputs'] = file_handle['inputs'][s_idx:e_idx, :-1] #b/c Jialin's data has label last column
+            macro_batch['targets'] = file_handle['inputs'][s_idx:e_idx, -1] #jialin's label, not one hot encoding, but does not matter here b/c this isnt used for autoencoding
+        else:
+            macro_batch['inputs'] = file_handle['inputs'][s_idx:e_idx]
+            macro_batch['targets'] = file_handle['targets'][s_idx:e_idx]
         file_handle.close()
 
         if self.autoencode_flag:
