@@ -39,6 +39,18 @@ import os
 from dayabay_dataset_code import dayabay
 from neon2.experiments.predict import PredictExperiment
 import sys
+import argparse
+
+
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--intel', action='store_true', default=False)
+parser.add_argument('-h','--h5_file')
+parser.add_argument('-s','--save_dir', default='./')
+args = parser.parse_args()
+
+
 #logging = {'level': 20, 'format': '%(asctime)-15s %(levelname)s:%(module)s - %(message)s'}
 logging.basicConfig(level=20)
 logger = logging.getLogger()
@@ -114,9 +126,7 @@ def run(spearminthp):
     backend = gen_backend(rng_seed=0)
     h5file = sys.argv[1]
     print h5file
-    #h5file = './jialin_data/small_dayabay1.h5'
-   # h5file = '/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5' # 5 classes of 20000 examples each
-    dataset = dayabay.Imageset(h5file=h5file, mode='c', save_dir='/global/homes/r/racah/projects/dayabay-learn/intel_data/pkls', autoencode_flag=True)
+    dataset = dayabay.Imageset(h5file=args.h5file, mode='c', intel=args.intel, save_dir=args.save_dir, autoencode_flag=True)
     #metrics = {'train':[LogLossSum(), MisclassRate()], 'validation':[LogLossMean()], 'test':[]}
     #metrics = {'train':[LogLossMean(), MisclassRate()], 'validation':[LogLossMean(), MisclassRate()], 'test':[]}
     metrics = {'train':[MisclassRate(), MSE()], 'validation':[MisclassRate(), MSE()], 'test':[]}
