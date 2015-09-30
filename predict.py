@@ -46,7 +46,8 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--intel', action='store_true', default=False)
-parser.add_argument('-h','--h5_file')
+parser.add_argument('--h5file',default='./data/single_1000.h5')
+parser.add_argument('--all_train', action='store_true', default=False)
 parser.add_argument('-s','--save_dir', default='./')
 args = parser.parse_args()
 
@@ -54,7 +55,6 @@ args = parser.parse_args()
 #logging = {'level': 20, 'format': '%(asctime)-15s %(levelname)s:%(module)s - %(message)s'}
 logging.basicConfig(level=20)
 logger = logging.getLogger()
-print sys.argv[1]
 def create_model(hp):
     nin = 192
     weight_init = neon.params.AutoUniformValGen()
@@ -124,9 +124,7 @@ def run(spearminthp):
     # Train model.
     model = create_model(hp)
     backend = gen_backend(rng_seed=0)
-    h5file = sys.argv[1]
-    print h5file
-    dataset = dayabay.Imageset(h5file=args.h5file, mode='c', intel=args.intel, save_dir=args.save_dir, autoencode_flag=True)
+    dataset = dayabay.Imageset(h5file=args.h5file, mode='c',all_train=args.all_train, intel=args.intel, save_dir=args.save_dir, autoencode_flag=True)
     #metrics = {'train':[LogLossSum(), MisclassRate()], 'validation':[LogLossMean()], 'test':[]}
     #metrics = {'train':[LogLossMean(), MisclassRate()], 'validation':[LogLossMean(), MisclassRate()], 'test':[]}
     metrics = {'train':[MisclassRate(), MSE()], 'validation':[MisclassRate(), MSE()], 'test':[]}

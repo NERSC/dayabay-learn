@@ -143,7 +143,7 @@ class Imageset(Dataset):
         opt_param(self, ['intel'], False)
         opt_param(self, ['preprocess_done'], False)
         opt_param(self, ['mean_norm', 'unit_norm'], False)
-
+	opt_param(self,['all_train'], False)
         opt_param(self, ['num_workers'], 6)
         opt_param(self, ['backend_type'], 'np.float32')
 
@@ -207,7 +207,7 @@ class Imageset(Dataset):
             (self.nrec, self.macro_size, experiment.model.batch_size)
         nmacros = self.nrec / self.macro_size
 
-        if self.intel:
+        if self.all_train:
             partition = {'train': 1, 'valid': 0.2, 'test': 0.2}
         else:
             partition = {'train': 0.6, 'valid': 0.2, 'test': 0.2}
