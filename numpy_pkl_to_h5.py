@@ -4,15 +4,27 @@ import numpy as np
 import pickle
 import os
 
-path_to_pkl = sys.argv[1]
-path_to_h5_input = sys.argv[2]
-ae = pickle.load(open(path_to_pkl))
-orig_data = h5py.File(path_to_h5_input, 'r')
-last_col = np.asarray(orig_data['inputs'][: , -1])
-ae_l = np.hstack((ae, last_col.reshape((last_col.size,1))))
-output_filename = os.path.basename(path_to_pkl).split('.')[0] + '.h5'
-h5f = h5py.File(output_filename,'w')
-h5f.create_dataset('autoencoded', data=ae_l)
+path_to_pkls = sys.argv[1:]
+final = np.array((0, 11))
+for ind, pkl in enumerate(path_to_pkls):
+    ae = pickle.load(open(pkl))
+    #labels should come in order
+    label = ind + 1#float(os.path.basename(path_to_pkls[0]).split('.')[0].split('-')[1] )
+
+    #make column of labels
+    labels = label * np.ones((ae.shape[0],1))
+
+    #add labelled column
+    ae = ae.hstack((ae,labels ))
+
+    #stack with previous
+    final = np.vstack((final, ae))
+
+
+#puts output in same directory as first pkl input
+output_filename = os.path.basename(path_to_pkls[0]).split('.')[0].split('-')[0] + '.h5'
+h5f = h5py.File(output_filename, 'w')
+h5f.create_dataset('autoencoded', data=final)
 h5f.close()
 
 
