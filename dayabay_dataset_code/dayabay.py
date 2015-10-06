@@ -200,11 +200,11 @@ class Imageset(Dataset):
             self.nrec = f['inputs'].shape[0]
 
         # Parameters for determining the train/test split.
-        self.macro_size = 10 * experiment.model.batch_size  # Seems reasonable.
-        assert np.mod(self.nrec, self.macro_size) == 0, \
-            'Data partition does not fit nicely: ' + \
-            'nexamples=%d, macrobatchsize=%d, minibatchsize=%d' % \
-            (self.nrec, self.macro_size, experiment.model.batch_size)
+        self.macro_size = experiment.model.batch_size  # Seems reasonable.
+        #assert np.mod(self.nrec, self.macro_size) == 0, \
+        #'Data partition does not fit nicely: ' + \
+        #'nexamples=%d, macrobatchsize=%d, minibatchsize=%d' % \
+        #(self.nrec, self.macro_size, experiment.model.batch_size)
         nmacros = self.nrec / self.macro_size
 
         if self.all_train:

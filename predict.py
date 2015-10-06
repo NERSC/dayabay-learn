@@ -48,6 +48,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--intel', action='store_true', default=False)
 parser.add_argument('--h5file',default='./data/single_1000.h5')
 parser.add_argument('--all_train', action='store_true', default=False)
+parser.add_argument('--batch_size',type=int,  default=1)
 parser.add_argument('-s','--save_dir', default='./')
 args = parser.parse_args()
 
@@ -117,7 +118,7 @@ def run(spearminthp):
     hp['nhid'] = int(spearminthp['nhid'])
     hp['lr_decay'] = 1.0 - 10**float(spearminthp['lr_decay_factor'])
     hp['activation'] = Tanh() #RectLin()
-    hp['batch_size'] = 100
+    hp['batch_size'] = args.batch_size
     hp['max_epochs'] = 100
     hp['string'] = 'ae_%d_%d_%0.3f' % (hp['nlayers'], hp['nhid'], hp['lr_decay']) 
     
