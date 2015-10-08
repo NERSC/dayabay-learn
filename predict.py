@@ -113,10 +113,10 @@ def run(spearminthp):
     # Run experiment.
     # Interpret spearmint params.
     hp = {}
-    hp['nlayers'] = int(spearminthp['nlayers'])
+    hp['nlayers'] = 3#int(spearminthp['nlayers'])
     hp['nlayers_dropout'] = 0 #int(spearminthp['nlayers'])
-    hp['nhid'] = int(spearminthp['nhid'])
-    hp['lr_decay'] = 1.0 - 10**float(spearminthp['lr_decay_factor'])
+    hp['nhid'] = 284
+    hp['lr_decay'] = 1.0 - 10**-2.0
     hp['activation'] = Tanh() #RectLin()
     hp['batch_size'] = args.batch_size
     hp['max_epochs'] = 100
@@ -166,15 +166,10 @@ def main(job_id, params):
 
 if __name__=='__main__':
     # Train a single network with metaparameters specified here.
-    params = {}
     #ae_3_284_0.990.prm
-    params = {
-              u'nlayers': array([3]),
-              u'nhid': array([284]),
-              u'lr_decay_factor': array([-2.0]),
-              }
-    job_id = 0
-    loss = main(job_id, params)
-    print loss
+    #job_id = 0
+    #loss = main(job_id, params)i
+    run({})
+    #print loss
 
 

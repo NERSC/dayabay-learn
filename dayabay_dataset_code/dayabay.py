@@ -198,7 +198,6 @@ class Imageset(Dataset):
             self.nrec = min(self.nrec, f['inputs'].shape[0])
         else:
             self.nrec = f['inputs'].shape[0]
-
         # Parameters for determining the train/test split.
         self.macro_size = experiment.model.batch_size  # Seems reasonable.
         #assert np.mod(self.nrec, self.macro_size) == 0, \
@@ -206,12 +205,12 @@ class Imageset(Dataset):
         #'nexamples=%d, macrobatchsize=%d, minibatchsize=%d' % \
         #(self.nrec, self.macro_size, experiment.model.batch_size)
         nmacros = self.nrec / self.macro_size
-
+	
         if self.all_train:
             partition = {'train': 1, 'valid': 0.2, 'test': 0.2}
         else:
             partition = {'train': 0.6, 'valid': 0.2, 'test': 0.2}
-
+	
         self.ntrain = int(nmacros * partition['train']) # ntrain is in number of macrobatches
         self.train_start = 0
         self.train_nrec = self.ntrain * self.macro_size
