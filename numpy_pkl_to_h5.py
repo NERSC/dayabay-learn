@@ -23,7 +23,7 @@ for ind, pkl in enumerate(path_to_pkls):
 
 
 #puts output in same directory as first pkl input
-output_filename = os.path.basename(path_to_pkls[0]).split('.')[0].split('-')[0] + '.h5'
+output_filename = os.path.basename(path_to_pkls[0]).split('.')[0].split('-')[0] + '-ae' + '.h5'
 h5f = h5py.File(os.path.join(save_dir, output_filename), 'w')
 h5f.create_dataset('autoencoded', data=final)
 h5f.close()

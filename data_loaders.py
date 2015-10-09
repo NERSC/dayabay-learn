@@ -2,11 +2,11 @@
 import h5py
 
 
-def load_dayabaysingle(path_to_h5, validation=True, cross_validate=False, normalize=False, test_prop=0.2, val_prop=0.2, seed=None):
+def load_dayabaysingle(path, validation=True, cross_validate=False, normalize=False, test_prop=0.2, val_prop=0.2, seed=None):
     '''val_prop is proprotion of train that is val
     test_prop is proportion of total that is test'''
 
-    h5_dataset = h5py.File(path_to_h5)
+    h5_dataset = h5py.File(path)
     X = h5_dataset['inputs']
     y = h5_dataset['targets']
     nclass = 5
