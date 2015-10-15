@@ -9,6 +9,7 @@ import sys
 import os
 
 des_cl, h5_path, save_dest = sys.argv[1:]
+des_cl = int(des_cl)
 
 h5_file_name = os.path.basename(h5_path)
 
@@ -19,7 +20,9 @@ labels = h5f['targets']
 #class 1 has a 1 at 0th element in one-hot encoding, class 2 has a 1 at 1th elemtent, etc.
 des_data = data[:][labels[:, des_cl - 1] == 1.0]
 
-h5f_o = h5py.File(os.path.join(save_dest, h5_file_name), 'w')
+save_name = os.path.join(save_dest, h5_file_name)
+
+h5f_o = h5py.File(save_name, 'w')
 h5f_o.create_dataset('inputs', data=des_data)
 h5f_o.close()
 
