@@ -1,0 +1,33 @@
+#PBS -q ccm_queue
+#PBS -l mppwidth=960
+#PBS -l walltime=04:00:00
+#PBS -N my_job
+#PBS -e my_job.$PBS_JOBID.err
+#PBS -o my_job.$PBS_JOBID.out
+
+h5dir=$1
+total_files="$(ls $h5dir | wc -l)"
+if [[ $# -lt 3 ]]
+then
+	start_idx=0
+	finish_idx=$total_files
+	if [[ $# -eq 2 ]]
+	then
+		start_idx=$2
+	fi
+else
+	start_idx=$2
+	finish_idx=$3
+fi
+	
+cd $PBS_O_WORKDIR
+
+module load taskfarmer
+tasks=5000 #any more than this would result in too many open files
+offset=$start_idx
+while [[ $offset -lt $finish_idx ]]
+do
+tf -t $tasks -n 40 -e serial.err -o serial.out /global/homes/r/racah/projects/dayabay-learn/ex_task.sh $h5dir $offset
+offset=$(( offset + tasks ))
+rm $PBS_O_WORKDIR/inputs/*
+done
