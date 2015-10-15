@@ -37,8 +37,8 @@ for pp_key in post_process_types:
     ts = pp_dict['tsne']
     comb = pp_dict['combined']
 
-    colors = ['b','r','g', 'k', 'm']
-    markers = ['o','o','o','s', 's']
+    colors = ['b', 'r', 'g', 'k', 'm']
+    markers = ['o', 'o', 'o', 's', 's']
     plt.figure(1)
     plt.clf()
     for i, event in enumerate(event_types):
