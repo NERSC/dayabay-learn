@@ -9,18 +9,28 @@ from neon.initializers import Uniform
 from neon.optimizers import GradientDescentMomentum, Schedule
 from neon.layers import Affine, Linear, GeneralizedCost
 from neon.transforms.activation import Tanh
-from neon.transforms.cost import SumSquared
+from neon.transforms.cost import SumSquared, MeanSquared
 from neon.models import Model
 import os
 from neon.callbacks.callbacks import Callbacks
+import glob
+import os.path.join as join
+import pickle
 
 
 logger = logging.getLogger()
 
 parser = NeonArgparser()
 
+model_files_dir ='./model_files'
+
 parser.add_argument('--h5file', '--batch_size', '--test')
-parser.set_defaults(batch_size=100, test=False) #h5file=?
+parser.set_defaults(batch_size=100,
+                    test=False,
+                    save_path='./serialized_checkpoints',
+                    h5file='/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5',
+                    serialize=10,
+                    epochs=100)
 
 args = parser.parse_args()
 
@@ -50,14 +60,14 @@ opt_gdm = GradientDescentMomentum(learning_rate=0.001,
                                   momentum_coef=0.5, #Peter had a more complicated momentum set up which is not implemented in new neon
                                   schedule=Schedule(step_config=1,
                                                     change=1.0 - 10 ** lr_decay_factor))
-
+bneck_width = 10
 n_layers = 3 #another variable determiend by spearmint
 layers = []
 wide = Affine(nout=284, init=init_uni, batch_norm=True, activation=Tanh())
-for i in range(3):
+for i in range(n_layers):
     layers.append(wide)
-layers.append(Linear(nout=10, init=init_uni))
-for i in range(3):
+layers.append(Linear(nout=bneck_width, init=init_uni))
+for i in range(n_layers):
     layers.append(wide)
 layers.append(Linear(nout=nin, init=init_uni))
 
@@ -80,16 +90,31 @@ if args.serialize > 0:
 ae.fit(train_set, optimizer=opt_gdm, num_epochs=args.epochs, cost=cost, callbacks=callbacks)
 
 
-#test
-#get output from
-for (x, t) in X_val:
-    for i, l in enumerate(ae.layers):
-        x =l.fprop(x)
-        if i == (len(layers) - 1) / 2: #trying to get middle layer here
-            b_neck = x
-            break
+#get reconstruction error
+val_err = ae.eval(valid_set, metric=MeanSquared())
+tr_err = ae.eval(valid_set, metric=MeanSquared())
+print 'Validation Reconstruction error = %.1f%%' % (val_err)
+print 'Training Reconstruction error = %.1f%%' % (tr_err)
 
-print b_neck
+def get_middle_layer_output(dataset):
+    b_neck=[]
+    for (x, t) in dataset:
+        for i, l in enumerate(ae.layers):
+            x = l.fprop(x)
+            if i == (len(layers) - 1) / 2: #trying to get middle layer here
+                b_neck.append(x)
+                break;
+    return b_neck
+
+tr_bneck = get_middle_layer_output(train_set)
+te_bneck = get_middle_layer_output(valid_set)
+
+#save model file
+# as n_layers-n_tr-bneck_layer_width-h5filename
+pickle.dump(ae.serialize(), join(model_files_dir, '%i-%i-%i-%s'% (len(layers), X_train.shape[0],bneck_width,
+                                                                  os.path.basename(args.h5file))))
+
+
 
 
 

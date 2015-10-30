@@ -5,18 +5,19 @@ import numpy as np
 import pickle
 import glob
 import os
+import os.path.join as join
 
 def load_dayabaysingle(path, validation=True, cross_validate=False, normalize=True, just_test=False, test_prop=0.2, val_prop=0.2, seed=None):
     '''val_prop is proprotion of train that is val
     test_prop is proportion of total that is test'''
-
+    pkl_dir = './pkled_standard_scaler'
     h5_dataset = h5py.File(path)
     X = np.asarray(h5_dataset['inputs'])
     y = np.asarray(h5_dataset['targets'])
     nclass = 5
 
     #filter out zero rows
-    nonzero_rows = ~np.all(X[:,:-1]==0, axis=1) #cuz label will not be zero
+    nonzero_rows = ~np.all(X[:, :-1]==0, axis=1) #cuz label will not be zero
     X = X[nonzero_rows]
     y = y[nonzero_rows]
 
@@ -39,8 +40,10 @@ def load_dayabaysingle(path, validation=True, cross_validate=False, normalize=Tr
 
             if normalize:
                 #upload standard scaler that was fit on training data and transform test based on that
-                newest_file = max(glob.iglob('./pkled_standard_scaler/*.pkl'), key=os.path.getctime)
-                ss = pickle.load(open('pkled_standard_scaler/' + newest_file))
+                newest_file = max(glob.iglob(join(pkl_dir,'*.pkl')), key=os.path.getctime)
+                if not os.path.exists(pkl_dir):
+                    os.mkdir(pkl_dir)
+                ss = pickle.load(open(join(pkl_dir,newest_file)))
                 X_test = ss.transform(X_test)
         else:
 
@@ -63,7 +66,9 @@ def load_dayabaysingle(path, validation=True, cross_validate=False, normalize=Tr
                 #subtracts out mean and divide by stdv
                 X_train = ss.fit_transform(X_train)
 
-                pickle.dump(ss)
+                #save standard scaler to file
+                pickle.dump(ss, join(pkl_dir, '_' + str(num_tr)))
+
                 #shouldnt need the lvalue here, cuz does it in place
                 X_test = ss.transform(X_test)
                 if validation:
