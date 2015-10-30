@@ -20,6 +20,7 @@ def Hbeta(D=Math.array([]), beta=1.0):
     # Compute P-row and corresponding perplexity
     P = Math.exp(-D.copy() * beta);
     sumP = sum(P);
+
     H = Math.log(sumP) + beta * Math.sum(D * P) / sumP;
     P = P / sumP;
     return H, P;
@@ -94,7 +95,7 @@ def pca(X=Math.array([]), no_dims=50):
     return Y;
 
 
-def tsne(X=Math.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
+def tsne(X=Math.array([]), no_dims=2, initial_dims=50, perplexity=30.0, max_iter=1000):
     """Runs t-SNE on the dataset in the NxD array X to reduce its dimensionality to no_dims dimensions.
 	The syntaxis of the function is Y = tsne.tsne(X, no_dims, perplexity), where X is an NxD NumPy array."""
 
@@ -109,7 +110,7 @@ def tsne(X=Math.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
     # Initialize variables
     X = pca(X, initial_dims).real;
     (n, d) = X.shape;
-    max_iter = 1000;
+    #max_iter = 250;
     initial_momentum = 0.5;
     final_momentum = 0.8;
     eta = 500;
@@ -172,3 +173,4 @@ if __name__ == "__main__":
     labels = Math.loadtxt("mnist2500_labels.txt");
     Y = tsne(X, 2, 50, 20.0);
     Plot.scatter(Y[:, 0], Y[:, 1], 20, labels);
+
