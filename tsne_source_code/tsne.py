@@ -10,8 +10,10 @@
 #  Created by Laurens van der Maaten on 20-12-08.
 #  Copyright (c) 2008 Tilburg University. All rights reserved.
 
+#Added to by Evan
 import numpy as Math
 import pylab as Plot
+from collections import deque
 
 
 def Hbeta(D=Math.array([]), beta=1.0):
@@ -99,6 +101,7 @@ def tsne(X=Math.array([]), no_dims=2, initial_dims=50, perplexity=30.0, max_iter
     """Runs t-SNE on the dataset in the NxD array X to reduce its dimensionality to no_dims dimensions.
 	The syntaxis of the function is Y = tsne.tsne(X, no_dims, perplexity), where X is an NxD NumPy array."""
 
+    e_prev = deque([], 5)
     # Check inputs
     if X.dtype != "float64":
         print "Error: array X should have type float64.";
@@ -157,10 +160,23 @@ def tsne(X=Math.array([]), no_dims=2, initial_dims=50, perplexity=30.0, max_iter
         if (iter + 1) % 10 == 0:
             C = Math.sum(P * Math.log(P / Q));
             print "Iteration ", (iter + 1), ": error is ", C
+            sig = 0.00001
+            if iter + 1 > 200:
+                if len(e_prev) == 5:
+                    mean_prev_e = sum(e_prev) / float(len(e_prev))
+                    if C >= mean_prev_e - sig:
+                        print "Stopping early! Marginal Imporvements!"
+                        break
+                e_prev.append(C)
+
+
 
         # Stop lying about P-values
         if iter == 100:
             P = P / 4;
+
+
+
 
     # Return solution
     return Y;
