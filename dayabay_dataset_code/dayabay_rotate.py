@@ -41,7 +41,7 @@ def get_rot_amount_maxelem(X):
     '''
     X: minibatch of data(192*minibatchsize)
     '''
-    return 11-(np.argmax(X, axis=0) % 24)
+    return 11 - (np.argmax(X, axis=0) % 24)
 def get_rot_amount_maxcol(X):
     '''
     X: minibatch of data(192*minibatchsize)
@@ -72,5 +72,28 @@ def rotate(X, amount):
         X[:,i] = tmp
         #print get_center_of_mass(X[:,i])
     return X
+
+#swap the qxes from the above fxns
+def rotate_tr(X,amount):
+    datapts=X.shape[0]
+    for i in xrange(datapts):
+        #print get_center_of_mass(X[:,i])
+        tmp = X[i,:]
+        tmp.shape = [8,24]
+        #print tmp
+        #print amount[i]
+        tmp = np.roll(tmp, amount[i], axis=1)
+        #print tmp
+        tmp.shape=[192]
+        X[i,:] = tmp
+        #print get_center_of_mass(X[:,i])
+    return X
+
+def get_rot_amount_maxelem_tr(X):
+    '''
+    X: minibatch of data(minibatchsizex192)
+    '''
+    return 11 - (np.argmax(X, axis=1) % 24)
+
 
 
