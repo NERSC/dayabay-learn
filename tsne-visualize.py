@@ -34,9 +34,9 @@ def save_image(vec, name, y_offset=0.3, x_offset=0.69, font_size=5):
             plt.text(left + y_offset + y, top + x_offset + x, '%.2f'%(im[x, y]), fontsize=font_size)
     plt.savefig(name + '.jpg')
 
-def get_eq_classes_of(y, points_per_class, nclass=5):
+def get_eq_classes_of(y, tsne_points_per_class, nclass=5):
     y_ind = np.arange(y.shape[0])
-    indices = np.asarray([y_ind[y[:, cl] == 1.][:points_per_class] for cl in range(nclass)]).reshape(nclass*points_per_class)
+    indices = np.asarray([y_ind[y[:, cl] == 1.][:tsne_points_per_class] for cl in range(nclass)]).reshape(nclass*tsne_points_per_class)
     return indices
     #return x_eq, y_eq
 
@@ -73,7 +73,7 @@ def save_images_close_to_centroids(x_ts, x_raw_eq):
 
 
         #find the corresponding raw data to these closest points, so xij is the image of class i that is closest to the cetnroid for class j
-        im_matrix = np.asarray([x_raw_eq[points_per_class*n+i, :] for n, i in enumerate(ix)])
+        im_matrix = np.asarray([x_raw_eq[tsne_points_per_class*n+i, :] for n, i in enumerate(ix)])
         for cl in range(nclass):
             for cent in range(nclass):
                     im_name = 'im_of_class_%s_closes_to_centroid_of_class_%s_%s_%s'%(event_dict[cl], event_dict[cent], pp_key, data_type)
@@ -100,9 +100,11 @@ final_dim = 2
 perp = 50.0
 max_iter = 500
 base_path='./'
-points_per_class=350
+tsne_points_per_class = 350
+plot_points_per_class = 350
 nclass = 5
-ignore_muon=False
+ignore_muon = False
+ignore_flasher = False
 # file_name = 'single_20000'
 
 #keep in this list in the order commented above
@@ -121,7 +123,7 @@ for data_type in data_types:
         x_raw = np.asarray(h5file[data_type + '_' + 'raw' + '_x'])
         y = np.asarray(h5file[data_type + '_raw_y'])
 
-        indices = get_eq_classes_of(y, points_per_class)
+        indices = get_eq_classes_of(y, tsne_points_per_class)
         X = x_pp[indices]
         x_raw_eq = x_raw[indices]
         y=y[indices]
@@ -152,8 +154,11 @@ for data_type in data_types:
                 if ignore_muon:
                     if event == 'muo':
                         continue
+                if ignore_flasher:
+                    if event == 'fla':
+                        continue
 
-                x_red_ev = x_red[y[:, hot_i] == 1.]
+                x_red_ev = x_red[y[:, hot_i] == 1.][:plot_points_per_class]
                 if final_dim == 3:
                     ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], x_red_ev[:, 2], marker=markers[hot_i], c=colors[hot_i], alpha=0.9, label=event)
                 else:
@@ -168,5 +173,5 @@ for data_type in data_types:
                       fancybox=True, shadow=True, ncol=5, prop={'size': 6})
             if not os.path.exists('./plots'):
                 os.mkdir('./plots')
-            plt.savefig('./plots/%s%s-%s-%s-%iD-%s.pdf' % (('no-muo-' if ignore_muon else ''), red_type, pp_key, data_type, final_dim, os.path.splitext(os.path.basename(filepath))[0]))
+            plt.savefig('./plots/%s%s%s-%s-%s-%iD-%s.pdf' % (('no-muo-' if ignore_muon else ''),('no-fla-' if ignore_flasher else '') red_type, pp_key, data_type, final_dim, os.path.splitext(os.path.basename(filepath))[0]))
 

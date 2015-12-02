@@ -7,6 +7,7 @@ import glob
 import os
 from os.path import join
 from dayabay_dataset_code import dayabay_rotate as dbr
+from operator import mul
 
 def filter_out_zeros(X,y):
     nonzero_rows = ~np.all(X[:, :-1]==0, axis=1) #cuz label will not be zero
@@ -106,6 +107,7 @@ def load_dayabaysingle(path,
             #mean center data
             tr_mean = np.mean(X_train)
 
+
             if not os.path.exists(pkl_dir):
                 os.mkdir(pkl_dir)
             pickle.dump(tr_mean, open(join(pkl_dir, str(num_tr) + '.pkl'), 'w'))
@@ -158,6 +160,8 @@ def load_dayabay_conv(path,filter_size=3, just_test=False, test_prop=0.2, valida
         both = np.lib.pad(both, (0, filter_size - 1), 'wrap')[:16, :]
 
         X_t[i] = both
+    #flatten
+    X_t = X_t.reshape(X_t.shape[0], reduce(mul, X_t.shape[1:]))
 
 
     if not just_test:
