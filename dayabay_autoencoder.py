@@ -21,6 +21,7 @@ import glob
 from os.path import join
 import pickle
 import h5py
+from tsne_visualize import TsneVis
 from sklearn.decomposition import PCA
 from tsne_source_code import tsne
 import time
@@ -164,7 +165,8 @@ def main():
 
     args.save_path += '/' + ae_model_key + '-checkpt.pkl'
     args.output_file += '/' + ae_model_key + '-metrics.h5'
-    h5fin = h5py.File(join(final_dir, ae_model_key + '-' + str(args.epochs) + ('-test' if args.test else '') + '-final.h5'), 'w')
+    final_h5_file = join(final_dir, ae_model_key + '-' + str(args.epochs) + ('-test' if args.test else '') + '-final.h5')
+    h5fin = h5py.File(final_h5_file, 'w')
 
     #by not specifying metric and adding in eval_freq to args we should get the val loss saved every <eval_freq> epoch
     callbacks = Callbacks(ae, train_set, args, eval_set=valid_set)
@@ -228,7 +230,8 @@ def main():
     #todo add val intermediate metrics to results file which already contains train loss metrics
     #h5fin.create_dataset('cost/loss_val',(args.epochs / args.eval_freq,), data=val_loss_data)
 
-
+    ts = TsneVis(final_h5_file)
+    ts.plot_tsne()
 
     h5fin.close()
 

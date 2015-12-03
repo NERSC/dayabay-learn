@@ -15,7 +15,11 @@ from he_initializer import HeWeightInit
 import h5py
 import os
 import pickle
+from tsne_visualize import TsneVis
 from dayabay_autoencoder import save_middle_layer_output
+import matplotlib
+matplotlib.use('agg')
+from matplotlib import pyplot as plt
 # parse the command line arguments
 parser = NeonArgparser(__doc__)
 
@@ -56,12 +60,15 @@ num_epochs = args.epochs
 
 
 # Set input and target to X_train
-train_set = DataIterator(X_train,  lshape=(2, 8, 26), make_onehot=False) #X_train.reshape(X_train.shape[0], 2, 8, 26)[:,0,:,:-2],
-valid_set = DataIterator(X_val, lshape=(2, 8, 26), make_onehot=False) # X_test.reshape(X_test.shape[0], 2, 8, 26)[:,0,:,:-2],
+x_train_y = X_train.reshape(X_train.shape[0], 2, 8, 26)[:,0,:,:-2]
+x_test_y = X_test.reshape(X_test.shape[0], 2, 8, 26)[:,0,:,:-2]
+train_set = DataIterator(X_train, lshape=(2, 8, 26), make_onehot=False)
+valid_set = DataIterator(X_val, lshape=(2, 8, 26), make_onehot=False)
 
 # Initialize the weights and the learning rule
-w_init = HeWeightInit() #Uniform(low=-0.1, high=0.1)
-opt_gdm = GradientDescentMomentum(learning_rate=0.001, momentum_coef=0.9, wdecay=0.0005)
+#w_init = HeWeightInit()
+w_init = Uniform(low=-0.1, high=0.1)
+opt_gdm = GradientDescentMomentum(learning_rate=0.1, momentum_coef=0.9, wdecay=0.0005)
 
 conv = dict(strides=1, init=w_init, padding={'pad_w': 0, 'pad_h':1}, activation=Rectlin())#, batch_norm=True)
 dconv = dict(init=w_init, strides=2, padding=0)
@@ -82,7 +89,7 @@ layers = [Conv((3, 3, 16), **conv), #8,26,2 -> 8,24,
 cost = GeneralizedCost(costfunc=SumSquared())
 
 mlp = Model(layers=layers)
-# Fit the model
+
 
 # configure callbacks
 callbacks = Callbacks(mlp, train_set, args) #**args.callback_args)
@@ -91,6 +98,7 @@ model_key = '{0}-{1}-{2}-{3}-{4}'.format(X_train.shape[1],'-'.join([(l.name[0] i
 args.save_path = model_files_dir + '/' + model_key + '.pkl'
 
 final_h5_file = os.path.join(final_dir,'ConvAE' + '-' + model_key + '-' + str(args.epochs) + ('-test' if args.test else '') + '-final.h5')
+
 h5fin = h5py.File(final_h5_file, 'w')
 h5fin.create_dataset('train_raw_x', data=X_train)
 h5fin.create_dataset('train_raw_y', data=y_train)
@@ -98,16 +106,12 @@ h5fin.create_dataset('test_raw_x', data=X_test)
 h5fin.create_dataset('test_raw_y', data=y_test)
 h5fin.create_dataset('val_raw_x', data=X_val)
 h5fin.create_dataset('val_raw_y', data=y_val)
-
-
-
 #add callback for calculating train loss every every <eval_freq> epoch
 callbacks.add_callback(LossCallback(h5fin.create_group('train_loss'), mlp, eval_set=train_set, epoch_freq=args.eval_freq))
-
 callbacks.add_callback(LossCallback(h5fin.create_group('valid_loss'), mlp, eval_set=valid_set, epoch_freq=args.eval_freq))
 
 
-
+# Fit the model
 mlp.fit(train_set, optimizer=opt_gdm, num_epochs=args.epochs, cost=cost, callbacks=callbacks)
 #mlp.eval(valid_set, SumSquared())
 
@@ -118,5 +122,10 @@ reconstructed_val = mlp.get_outputs(valid_set)
 h5fin.create_dataset('reconstructed_val', data=reconstructed_val)
 
 h5fin.close()
+
+ts = TsneVis(final_h5_file)
+ts.plot_tsne()
+
 pickle.dump(mlp.serialize(), open(os.path.join(model_files_dir, '%s-%s.pkl'%(model_key, str(args.epochs))), 'w'))
+
 
