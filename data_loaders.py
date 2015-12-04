@@ -144,29 +144,34 @@ def load_dayabaysingle(path,
 
     return ret
 
-def load_dayabay_conv(path,filter_size=3, just_test=False, test_prop=0.2, validation=True, val_prop=0.2, seed=3):
+def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, test_prop=0.2, validation=True, val_prop=0.2, seed=3):
     nclass=5
     h5_dataset = h5py.File(path)
     X = np.asarray(h5_dataset['inputs']).astype('float64')
     y = np.asarray(h5_dataset['targets']).astype('float64')
-    X, y = filter_out_zeros(X,y)
-    X = X.reshape(X.shape[0],8,24)
-    X_t = np.zeros((X.shape[0],16,24 + filter_size -1))
-    for i,arr in enumerate(X):
-        #add another 8,24 array that is shifted by 12
-        temp = np.lib.pad(arr, (0, 11), 'wrap')[:8, 11:]
-        both = np.vstack((arr, temp))
-        #pad the right with the first filter_size-1 columns from the left
-        both = np.lib.pad(both, (0, filter_size - 1), 'wrap')[:16, :]
 
-        X_t[i] = both
-    #flatten
-    X_t = X_t.reshape(X_t.shape[0], reduce(mul, X_t.shape[1:]))
+    X -= np.mean(X)
+    X /= np.std(X)
+    X, y = filter_out_zeros(X,y)
+    if clev_preproc:
+        X = X.reshape(X.shape[0],8,24)
+        X_t = np.zeros((X.shape[0],16,24 + filter_size -1))
+        for i,arr in enumerate(X):
+            #add another 8,24 array that is shifted by 12
+            temp = np.lib.pad(arr, (0, 11), 'wrap')[:8, 11:]
+            both = np.vstack((arr, temp))
+            #pad the right with the first filter_size-1 columns from the left
+            both = np.lib.pad(both, (0, filter_size - 1), 'wrap')[:16, :]
+
+            X_t[i] = both
+        #flatten
+        X_t = X_t.reshape(X_t.shape[0], reduce(mul, X_t.shape[1:]))
+    else:
+        X_t = X
 
 
     if not just_test:
-        X_train, y_train, X_test, y_test, num_tr = \
-            split_train_test(X_t,y,nclass, test_prop, seed)
+        X_train, y_train, X_test, y_test, num_tr = split_train_test(X_t,y,nclass, test_prop, seed)
 
 
 

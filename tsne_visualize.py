@@ -44,9 +44,9 @@ class TsneVis(object):
 
         #keep in this list in the order commented above
         self.event_types = ['adinit', 'addelay', 'muo', 'fla', 'oth', ]
-        self.event_dict = {i: ev for i, ev in enumerate(self.event_types)}
+        #self.event_dict = {i: ev for i, ev in enumerate(self.event_types)}
 
-        self.post_process_types = ['ae', 'raw']
+        self.post_process_types = ['ae']#, 'raw']
         self.data_types = ['val']
         self.pp_type = None
         self.data_type = None
@@ -184,7 +184,7 @@ class TsneVis(object):
 
                 x_ts = self.get_tsne_data(X)
 
-                self.save_images_close_to_centroids(y,x_ts, x_raw_eq)
+                #self.save_images_close_to_centroids(y,x_ts, x_raw_eq)
 
 
                 #pca = PCA(n_components=self.final_dim)
