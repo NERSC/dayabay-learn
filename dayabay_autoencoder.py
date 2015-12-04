@@ -58,15 +58,14 @@ def main():
 
     parser = NeonArgparser()
 
-    model_files_dir = './model_files'
+    model_files_dir = './model_files/fc-ae'
     final_dir = './results/fc-ae'
     output_dir = './intermediate_metrics'
     dirs = [model_files_dir, final_dir, output_dir]
 
     for dir in dirs:
         if not os.path.exists(dir):
-            os.mkdir(dir)
-
+            os.makedirs(dir)
 
     parser.add_argument('--h5file')
     parser.add_argument('--test')

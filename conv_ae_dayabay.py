@@ -1,25 +1,24 @@
 __author__ = 'racah'
-from neon.util.argparser import NeonArgparser
-from data_loaders import load_dayabay_conv
-import numpy as np
-from neon.data import DataIterator, load_mnist
-from neon.initializers import Uniform, Gaussian, GlorotUniform
-from neon.layers import Conv, Pooling, GeneralizedCost, Deconv, Affine
-from neon.models import Model
-from neon.optimizers import GradientDescentMomentum
-from neon.transforms import Rectlin, SumSquared, Tanh
-from neon.callbacks.callbacks import Callbacks, LossCallback
-from neon.util.argparser import NeonArgparser
-from he_initializer import HeWeightInit
-import h5py
 import os
 import pickle
+
+from neon.data import DataIterator
+from neon.layers import Conv, Pooling, GeneralizedCost, Deconv
+from neon.models import Model
+from neon.optimizers import GradientDescentMomentum
+from neon.transforms import Rectlin, SumSquared
+from neon.callbacks.callbacks import Callbacks, LossCallback
+from neon.util.argparser import NeonArgparser
+import h5py
+import matplotlib
+
+from data_loaders import load_dayabay_conv
+from he_initializer import HeWeightInit
 from tsne_visualize import TsneVis
 from dayabay_autoencoder import save_middle_layer_output
-import matplotlib
-from helper_fxns import plot_train_val_learning_curve, save_orig_data
+from util.helper_fxns import plot_train_val_learning_curve, save_orig_data
+
 matplotlib.use('agg')
-from matplotlib import pyplot as plt
 # parse the command line arguments
 parser = NeonArgparser(__doc__)
 
@@ -30,15 +29,26 @@ model_files_dir='./model_files/conv-ae'
 dirs = [final_dir, model_files_dir]
 for dir in dirs:
     if not os.path.exists(dir):
-        os.mkdir(dir)
+        os.makedirs(dir)
 bneck_width = 10
 
-parser.set_defaults(batch_size=128,h5file='/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5',
+parser.set_defaults(batch_size=100,h5file='/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5',
                     serialize=2,epochs=100,model_file=False,eval_freq=1, test=False)
 args = parser.parse_args()
 num_epochs = args.epochs
 
 (X_train, y_train), (X_val,y_val), (X_test, y_test), nclass = load_dayabay_conv(path=args.h5file,clev_preproc=True, seed=5)
+
+
+#make sure size of validation data a multiple of batch size (otherwise tough to match labels)
+val_end = args.batch_size * (X_val.shape[0] / args.batch_size)
+X_val = X_val[:val_end]
+y_val = y_val[:val_end]
+
+#make sure size of test data a multiple of batch size
+test_end = args.batch_size * (X_test.shape[0] / args.batch_size)
+X_test = X_test[:test_end]
+y_test = y_test[:test_end]
 
 train_set = DataIterator(X_train, lshape=(2, 8, 26), make_onehot=False)
 valid_set = DataIterator(X_val, lshape=(2, 8, 26), make_onehot=False)

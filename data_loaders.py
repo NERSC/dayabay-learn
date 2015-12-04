@@ -6,7 +6,7 @@ import pickle
 import glob
 import os
 from os.path import join
-from dayabay_dataset_code import dayabay_rotate as dbr
+from peter_old_code.dayabay_dataset_code import dayabay_rotate as dbr
 from operator import mul
 
 def filter_out_zeros(X,y):
@@ -80,7 +80,7 @@ def load_dayabaysingle(path,
     nclass = 5
 
     #filter out zero rows
-    X,y = filter_out_zeros()
+    X,y = filter_out_zeros(X,y)
 
 
     #cetner the highest sensor value X
@@ -155,15 +155,13 @@ def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, te
     X, y = filter_out_zeros(X,y)
     if clev_preproc:
         X = X.reshape(X.shape[0],8,24)
-        X_t = np.zeros((X.shape[0],16,24 + filter_size -1))
-        for i,arr in enumerate(X):
-            #add another 8,24 array that is shifted by 12
-            temp = np.lib.pad(arr, (0, 11), 'wrap')[:8, 11:]
-            both = np.vstack((arr, temp))
-            #pad the right with the first filter_size-1 columns from the left
-            both = np.lib.pad(both, (0, filter_size - 1), 'wrap')[:16, :]
+        #pad the right with the first filter_size-1 columns from the left
+        X_p = np.lib.pad(X, ((0, 0), (0, 0), (0, filter_size - 1)), 'wrap')
 
-            X_t[i] = both
+        #add another 8,24 array that is shifted by 12
+        X_s_p = np.lib.pad(X_p, ((0,0), (0,0), (0, 11)), 'wrap')[:,:,11:]
+        X_t = np.hstack((X_p, X_s_p))
+
         #flatten
         X_t = X_t.reshape(X_t.shape[0], reduce(mul, X_t.shape[1:]))
     else:
