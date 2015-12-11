@@ -28,7 +28,7 @@ import sys
 
 
 class TsneVis(object):
-    def __init__(self, filepath='./results/192-284-284-10-Tanh-single_20000-rot-100-final.h5', ):
+    def __init__(self, filepath='./results/192-284-284-10-Tanh-single_20000-rot-100-final.h5', reconstruct=True ):
         self.filepath = filepath
         self.raw_dim = 192
         self.im_path = "./images"
@@ -43,14 +43,15 @@ class TsneVis(object):
         self.nclass = 5
         self.ignore_muon = False
         self.ignore_flasher = False
+        self.reconstruct=reconstruct
         # file_name = 'single_20000'
 
         #keep in this list in the order commented above
         self.event_types = ['adinit', 'addelay', 'muo', 'fla', 'oth', ]
         self.event_dict = {i: ev for i, ev in enumerate(self.event_types)}
 
-        self.post_process_types = ['ae']  #, 'raw']
-        self.data_types = ['val']
+        self.post_process_types = ['ae','raw']  #, 'raw']
+        self.data_types = ['val','train']
         self.pp_type = None
         self.data_type = None
         self.h5file = h5py.File(self.filepath)
@@ -88,18 +89,24 @@ class TsneVis(object):
                                                         self.max_iter)
         full_path = os.path.join('pkled_tsne', pkled_data_name)
         new_full_path = os.path.join('pkled_tsne', new_pkled_data_name)
-        if os.path.exists(full_path):
-            print "reconstructing tsne for %s from pickled file. This shouldn't take long..." % (pkled_data_name)
-            x_ts = pickle.load(open(full_path))
-            pickle.dump(x_ts, open(new_full_path, 'w'))
-            os.remove(full_path)
-        elif os.path.exists(new_full_path):
-            print "reconstructing tsne for %s from pickled file. This shouldn't take long..." % (pkled_data_name)
-            x_ts = pickle.load(open(new_full_path))
+        if self.reconstruct:
+            if os.path.exists(full_path):
+                print "reconstructing tsne for %s from pickled file. This shouldn't take long..." % (pkled_data_name)
+                x_ts = pickle.load(open(full_path))
+                pickle.dump(x_ts, open(new_full_path, 'w'))
+                os.remove(full_path)
+            elif os.path.exists(new_full_path):
+                print "reconstructing tsne for %s from pickled file. This shouldn't take long..." % (pkled_data_name)
+                x_ts = pickle.load(open(new_full_path))
+            else:
+                x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
+                                 max_iter=self.max_iter)  #, 2, 10, 10.0
+                pickle.dump(x_ts, open(new_full_path, 'w'))
         else:
-            x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
-                             max_iter=self.max_iter)  #, 2, 10, 10.0
-            pickle.dump(x_ts, open(new_full_path, 'w'))
+                x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
+                max_iter=self.max_iter)  #, 2, 10, 10.0
+                pickle.dump(x_ts, open(new_full_path, 'w'))
+
 
         return x_ts
 
@@ -162,14 +169,19 @@ class TsneVis(object):
 
             ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
                       fancybox=True, shadow=True, ncol=5, prop={'size': 6})
-            save_path = './plots/%s%s%s-%s-%s/%iD-%s.pdf' % (
+            save_path = './plots/%s%s%s-%s-%s/%iD-%s%s%s-%s-%s-%s.eps' % (
                 ('no-muo-' if self.ignore_muon else ''), ('no-fla-' if self.ignore_flasher else ''),
                 red_type,
                 self.pp_type,
                 self.data_type,
                 self.final_dim,
+                ('no-muo-' if self.ignore_muon else ''), ('no-fla-' if self.ignore_flasher else ''),
+                red_type,
+                self.pp_type,
+                self.data_type,
                 os.path.splitext(os.path.basename(self.filepath))[0])
-            os.makedirs(os.path.dirname(save_path))
+            if not os.path.exists(os.path.dirname(save_path)):
+                os.makedirs(os.path.dirname(save_path))
             plt.savefig(save_path)
 
 
@@ -179,9 +191,9 @@ class TsneVis(object):
             for pp_type in self.post_process_types:
                 self.pp_type = pp_type
 
-                x_pp = np.asarray(self.h5file[self.data_type + '_' + self.pp_type + '_x'])
-                x_raw = np.asarray(self.h5file[self.data_type + '_' + 'raw' + '_x'])
-                y = np.asarray(self.h5file[self.data_type + '_raw_y'])
+                x_pp = np.asarray(self.h5file[self.data_type + '/' + self.pp_type + '/' + self.data_type + '_' + self.pp_type + '_x'])
+                x_raw = np.asarray(self.h5file[self.data_type + '/' + 'raw' + '/' +self.data_type + '_' + 'raw' + '_x'])
+                y = np.asarray(self.h5file[self.data_type + '/' + 'raw' + '/' + self.data_type + '_raw_y'])
 
                 indices = self.get_eq_classes_of(y)
                 X = x_pp[indices]
@@ -203,7 +215,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         filepath = sys.argv[1]
     else:
-        filepath = './results/192-284-284-10-Tanh-single_20000-rot-100-final.h5'
+        filepath = './results/old/192-284-284-10-Tanh-single_20000-rot-100-final.h5'
 
     plt_tsne = TsneVis(filepath)
     plt_tsne.plot_tsne()

@@ -1,7 +1,7 @@
 #Evan
 
-import matplotlib
-matplotlib.use('agg')
+# import matplotlib
+# matplotlib.use('agg')
 import numpy as np
 import logging
 from neon.util.argparser import NeonArgparser
@@ -15,7 +15,7 @@ from neon.transforms.activation import Tanh, Identity
 from neon.transforms.cost import SumSquared, MeanSquared
 from neon.models import Model
 import os
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 from neon.callbacks.callbacks import Callbacks, LossCallback
 import glob
 from os.path import join
@@ -71,7 +71,7 @@ def main():
     parser.add_argument('--test')
     parser.add_argument('--just_test')
 
-    parser.set_defaults(batch_size=128,
+    parser.set_defaults(batch_size=100,
                         test=False,
                         save_path=model_files_dir,
                         h5file='/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5',
@@ -95,6 +95,9 @@ def main():
 
     #load and split all data from file
     (X_train, y_train), (X_val, y_val), (X_test, y_test), nclass = load_dayabaysingle(path=args.h5file)
+    train_end = args.batch_size * (X_train.shape[0] / args.batch_size)
+    X_train = X_train[:train_end]
+    y_train = y_train[:train_end]
     nin = X_train.shape[1]
 
 
@@ -139,10 +142,10 @@ def main():
     layers = []
     layers.append(Affine(nout=284, init=init_uni, batch_norm=True, activation=Tanh()))
     layers.append(Affine(nout=284, init=init_uni, batch_norm=True, activation=Tanh()))
-    layers.append(Linear(nout=bneck_width, init=init_uni, name='middleLayer'))
+    layers.append(Affine(nout=bneck_width, init=init_uni, act_name='middleLayer',activation=Tanh()))
     layers.append(Affine(nout=284, init=init_uni, batch_norm=True, activation=Tanh()))
     layers.append(Affine(nout=284, init=init_uni, batch_norm=True, activation=Tanh()))
-    layers.append(Linear(nout=nin, init=init_uni))
+    layers.append(Affine(nout=nin, init=init_uni,activation=Tanh()))
 
     cost = GeneralizedCost(costfunc=SumSquared())
 
@@ -186,42 +189,20 @@ def main():
         args.epochs = 0
     ae.fit(train_set, optimizer=opt_gdm, num_epochs=args.epochs, cost=cost, callbacks=callbacks)
 
-    ######
-    #
-    # for i, (x,t) in enumerate(valid_set):
-    #     x_i = x.asnumpyarray().T
-    #     x_t = X_val[i*args.batch_size:i*args.batch_size+args.batch_size]
-    #     if np.array_equal(x_i,x_t):
-    #         print i
-    #     else:
-    #         print 'no!', i
-    #     # for k, row in enumerate(x_i):
-    #     #     for j,row_t in enumerate(X_val):
-    #     #         if np.array_equal(row,row_t):
-    #     #             print i +k,j
-    #
-    # assert False
 
-
-
-
-
-
-
-
-    h5fin.create_dataset('train_raw_x', data=X_train)
-    h5fin.create_dataset('train_raw_y', data=y_train)
-    h5fin.create_dataset('test_raw_x', data=X_test)
-    h5fin.create_dataset('test_raw_y', data=y_test)
-    h5fin.create_dataset('val_raw_x', data=X_val)
-    h5fin.create_dataset('val_raw_y', data=y_val)
+    h5fin.create_dataset('train/raw/train_raw_x', data=X_train)
+    h5fin.create_dataset('train/raw/train_raw_y', data=y_train)
+    h5fin.create_dataset('test/raw/test_raw_x', data=X_test)
+    h5fin.create_dataset('test/raw/test_raw_y', data=y_test)
+    h5fin.create_dataset('val/raw/val_raw_x', data=X_val)
+    h5fin.create_dataset('val/raw/val_raw_y', data=y_val)
 
     #save intermeidate layer values
-    # h5ae_tr = h5fin.create_dataset('train_ae_x', (X_train.shape[0], bneck_width))
-    # save_middle_layer_output(train_set, h5ae_tr, ae)
+    h5ae_tr = h5fin.create_dataset('train/ae/train_ae_x', (X_train.shape[0], bneck_width))
+    save_middle_layer_output(train_set, h5ae_tr, ae, bneck_width)
 
 
-    h5ae_val = h5fin.create_dataset('val_ae_x', (X_val.shape[0], bneck_width))
+    h5ae_val = h5fin.create_dataset('val/ae/val_ae_x', (X_val.shape[0], bneck_width))
     save_middle_layer_output(valid_set, h5ae_val, ae, bneck_width)
 
     #val_loss_data = h5py.File(args.output_file)['cost/loss'][:]
@@ -229,7 +210,7 @@ def main():
     #todo add val intermediate metrics to results file which already contains train loss metrics
     #h5fin.create_dataset('cost/loss_val',(args.epochs / args.eval_freq,), data=val_loss_data)
 
-    ts = TsneVis(final_h5_file)
+    ts = TsneVis(final_h5_file, reconstruct=False)
     ts.plot_tsne()
 
     h5fin.close()
@@ -238,6 +219,7 @@ def main():
     pickle.dump(ae.serialize(), open(join(model_files_dir, '%s-%s.pkl'%(ae_model_key, str(args.epochs))), 'w'))
 
 if __name__ == "__main__":
+
     main()
 
 

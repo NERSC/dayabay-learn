@@ -57,17 +57,17 @@ valid_set = DataIterator(X_val, lshape=(2, 8, 26), make_onehot=False)
 w_init = HeWeightInit()
 opt_gdm = GradientDescentMomentum(learning_rate=0.001, momentum_coef=0.9)
 
-conv = dict(strides=1, init=w_init, padding={'pad_w': 0, 'pad_h':1}, activation=Rectlin())#, batch_norm=True)
-dconv = dict(init=w_init, strides=2, padding=0)
+conv = dict(strides=1, init=w_init, padding={'pad_w': 0, 'pad_h':1}, activation=Rectlin(), batch_norm=True)#, batch_norm=True)
+dconv = dict(init=w_init, strides=2, padding=0,batch_norm=True)
 
 #change kernal size to 5x5
-layers = [Conv((3, 3, 16), **conv), #8,26,2 -> 8,24,
+layers = [Conv((3, 3, 16), **conv,), #8,26,2 -> 8,24,
           Pooling((2, 2), strides=2),# -> 4,12,
           Conv((3, 3, 2), **conv), # -> 4,10,
           Pooling((2, 2), strides=2), #-> 2,5
-          Conv((2, 5, bneck_width), init=w_init, strides=1, padding=0, activation=Rectlin(), conv_name="middleLayer"),#-> 1,1,10 like an FC layer
+          Conv((2, 5, bneck_width), init=w_init, strides=1, padding=0, activation=Rectlin(),batch_norm=True, act_name="middleLayer"),#-> 1,1,10 like an FC layer
           Deconv((2, 4, 16), **dconv), #-> 2,4,
-          Deconv((2, 5, 16), init=w_init, strides=2, padding=0), #-> 4,12
+          Deconv((2, 5, 16), init=w_init, strides=2, padding=0, batch_norm=True), #-> 4,12
           Deconv((2, 6, 2), **dconv)] #->8,26,
 
 
