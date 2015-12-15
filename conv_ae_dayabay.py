@@ -33,11 +33,11 @@ for dir in dirs:
 bneck_width = 10
 
 parser.set_defaults(batch_size=100,h5file='/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5',
-                    serialize=2,epochs=100,model_file=False,eval_freq=1, test=False)
+                    serialize=2, epochs=100, model_file=False,eval_freq=1, test=False)
 args = parser.parse_args()
 num_epochs = args.epochs
 
-(X_train, y_train), (X_val,y_val), (X_test, y_test), nclass = load_dayabay_conv(path=args.h5file,clev_preproc=True, seed=5)
+(X_train, y_train), (X_val,y_val), (X_test, y_test), nclass = load_dayabay_conv(path=args.h5file,clev_preproc=False, seed=5)
 
 
 #make sure size of validation data a multiple of batch size (otherwise tough to match labels)
@@ -50,18 +50,20 @@ test_end = args.batch_size * (X_test.shape[0] / args.batch_size)
 X_test = X_test[:test_end]
 y_test = y_test[:test_end]
 
-train_set = DataIterator(X_train, lshape=(2, 8, 26), make_onehot=False)
-valid_set = DataIterator(X_val, lshape=(2, 8, 26), make_onehot=False)
+train_set = DataIterator(X_train, lshape=(1, 8, 24), make_onehot=False)
+valid_set = DataIterator(X_val, lshape=(1, 8, 24), make_onehot=False)
 
 
 w_init = HeWeightInit()
-opt_gdm = GradientDescentMomentum(learning_rate=0.001, momentum_coef=0.9)
+w_init2 = HeWeightInit() #makes this smaller stdev and put in lastish layer
+opt_gdm = GradientDescentMomentum(learning_rate=0.0001, momentum_coef=0.9)
 
 conv = dict(strides=1, init=w_init, padding={'pad_w': 0, 'pad_h':1}, activation=Rectlin(), batch_norm=True)#, batch_norm=True)
 dconv = dict(init=w_init, strides=2, padding=0,batch_norm=True)
 
 #change kernal size to 5x5
-layers = [Conv((3, 3, 16), **conv,), #8,26,2 -> 8,24,
+layers = [#data_transform layer here
+    Conv((3, 3, 16), **conv), #8,26,2 -> 8,24,
           Pooling((2, 2), strides=2),# -> 4,12,
           Conv((3, 3, 2), **conv), # -> 4,10,
           Pooling((2, 2), strides=2), #-> 2,5

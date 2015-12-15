@@ -13,6 +13,7 @@ import os
 
 from tsne_source_code import tsne
 import pickle
+import itertools
 
 # from mpl_toolkits.mplot3d import Axes3D
 import sys
@@ -28,30 +29,32 @@ import sys
 
 
 class TsneVis(object):
-    def __init__(self, filepath='./results/192-284-284-10-Tanh-single_20000-rot-100-final.h5', reconstruct=True ):
+    def __init__(self, filepath='./results/192-284-284-10-Tanh-single_20000-rot-100-final.h5', reconstruct=True, old=False ):
         self.filepath = filepath
         self.raw_dim = 192
         self.im_path = "./images"
+        self.old = old
         if not os.path.exists(self.im_path):
             os.mkdir(self.im_path)
         self.final_dim = 2
         self.perp = 50.0
-        self.max_iter = 500
+        self.max_iter = 1000
         self.base_path = './'
-        self.tsne_points_per_class = 350
-        self.plot_points_per_class = 350
+        self.cent_images_per_class = 5
+        self.tsne_points_per_class = 500
+        self.plot_points_per_class = 500
         self.nclass = 5
-        self.ignore_muon = False
-        self.ignore_flasher = False
+        self.ignore = []
+
         self.reconstruct=reconstruct
         # file_name = 'single_20000'
 
         #keep in this list in the order commented above
-        self.event_types = ['adinit', 'addelay', 'muo', 'fla', 'oth', ]
+        self.event_types = ['ibd_prompt', 'ibd_delay', 'muon', 'flasher', 'other', ]
         self.event_dict = {i: ev for i, ev in enumerate(self.event_types)}
 
-        self.post_process_types = ['ae','raw']  #, 'raw']
-        self.data_types = ['val','train']
+        self.post_process_types = ['ae']  #, 'raw']
+        self.data_types = ['val']
         self.pp_type = None
         self.data_type = None
         self.h5file = h5py.File(self.filepath)
@@ -75,40 +78,19 @@ class TsneVis(object):
         return indices
         #return x_eq, y_eq
 
-    def get_tsne_data(self, X):
-
-        pkled_data_name = "%s-%s-%s-%s-%i-%f-%i" % (self.pp_type, self.data_type, '-'.join(self.event_types),
-                                                    os.path.splitext(os.path.basename(self.filepath)), self.final_dim,
-                                                    self.perp,
-                                                    self.max_iter)
-        new_pkled_data_name = "%s-%s-%s-%s-%i-%f-%i" % (self.pp_type,
-                                                        self.data_type, '-'.join(self.event_types),
-                                                        os.path.splitext(os.path.basename(self.filepath))[0],
-                                                        self.final_dim,
-                                                        self.perp,
-                                                        self.max_iter)
-        full_path = os.path.join('pkled_tsne', pkled_data_name)
-        new_full_path = os.path.join('pkled_tsne', new_pkled_data_name)
+    def get_tsne_data(self, X, data_type, pp_type):
+        ts_key = data_type + '/' + pp_type + '/' + 'ts_' + data_type + '_' + pp_type + '_x'
+        calc=True
         if self.reconstruct:
-            if os.path.exists(full_path):
-                print "reconstructing tsne for %s from pickled file. This shouldn't take long..." % (pkled_data_name)
-                x_ts = pickle.load(open(full_path))
-                pickle.dump(x_ts, open(new_full_path, 'w'))
-                os.remove(full_path)
-            elif os.path.exists(new_full_path):
-                print "reconstructing tsne for %s from pickled file. This shouldn't take long..." % (pkled_data_name)
-                x_ts = pickle.load(open(new_full_path))
-            else:
-                x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
-                                 max_iter=self.max_iter)  #, 2, 10, 10.0
-                pickle.dump(x_ts, open(new_full_path, 'w'))
-        else:
-                x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
-                max_iter=self.max_iter)  #, 2, 10, 10.0
-                pickle.dump(x_ts, open(new_full_path, 'w'))
-
-
+            if ts_key in self.h5file:
+                x_ts = np.asarray(self.h5file[ts_key])
+                calc = False
+        if calc:
+            x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
+                                 max_iter=self.max_iter)
+            self.h5file.create_dataset(ts_key, data=x_ts)
         return x_ts
+
 
     def save_images_close_to_centroids(self, y, x_ts, x_raw_eq):
         #find centroid of each class
@@ -117,22 +99,24 @@ class TsneVis(object):
 
         #find closest t-sne points for each class for each centroid of the classes, so
         diff = np.asarray([[arr - cent for cent in centroids] for arr in class_arr]) ** 2
+
         ix = np.argmin(diff[:, :, :, 0] + diff[:, :, :, 1], axis=2)
+        ix = np.argsort(diff[:, :, :, 0] + diff[:, :, :, 1], axis=2)[:,:,:self.cent_images_per_class]
 
 
         #find the corresponding raw data to these closest points, so xij is the image of class i that is closest to the cetnroid for class j
         im_matrix = np.asarray([x_raw_eq[self.tsne_points_per_class * n + i, :] for n, i in enumerate(ix)])
         for cl in range(self.nclass):
             for cent in range(self.nclass):
-                im_name = 'im_of_class_%s_closes_to_centroid_of_class_%s_%s_%s' % (
-                    self.event_dict[cl], self.event_dict[cent], self.pp_type, self.data_type)
                 save_dir = self.im_path
-                for ext in [self.pp_type, self.data_type,
-                            '%s_close_to_cent_of_%s' % (self.event_dict[cl], self.event_dict[cent])]:
+                for ext in [self.pp_type, self.data_type,'%s_close_to_cent_of_%s' % (self.event_dict[cl], self.event_dict[cent])]:
                     save_dir = os.path.join(save_dir, ext)
                     if not os.path.exists(save_dir):
                         os.mkdir(save_dir)
-                self.save_image(im_matrix[cl, cent], os.path.join(save_dir, im_name))
+                for im_no in range(self.cent_images_per_class):
+                    im_name = 'im_of_class_%s_closes_to_centroid_of_class_%s_%s_%s_%i' % (
+                        self.event_dict[cl], self.event_dict[cent], self.pp_type, self.data_type, im_no)
+                    self.save_image(im_matrix[cl, cent,im_no], os.path.join(save_dir, im_name))
 
     def _plot(self, reduced_arrs, y):
         colors = ['b', 'r', 'g', 'y', 'm']
@@ -140,49 +124,46 @@ class TsneVis(object):
         kwargs = {}
         if self.final_dim == 3:
             kwargs['projection'] = '3d'
+        ignores = ['']#itertools.combinations(self.event_types, 2)
+        #for ignore in self.event_types:
+        for ignore in ignores:
+            self.ignore = ignore
+            for red_type, x_red in reduced_arrs.iteritems():
+                fig = plt.figure(1)
+                plt.clf()
+                ax = fig.add_subplot(111, **kwargs)
 
-        for red_type, x_red in reduced_arrs.iteritems():
-            fig = plt.figure(1)
-            plt.clf()
-            ax = fig.add_subplot(111, **kwargs)
-
-            #self.event_types list is in order of which bit is hot, where the most significant bit is first
-            for hot_i, event in enumerate(self.event_types):
-                if self.ignore_muon:
-                    if event == 'muo':
+                #self.event_types list is in order of which bit is hot, where the most significant bit is first
+                for hot_i, event in enumerate(self.event_types):
+                    if event in self.ignore:
                         continue
-                if self.ignore_flasher:
-                    if event == 'fla':
-                        continue
+                    x_red_ev = x_red[y[:, hot_i] == 1.][:self.plot_points_per_class]
+                    if self.final_dim == 3:
+                        ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], x_red_ev[:, 2], marker=markers[hot_i], c=colors[hot_i],
+                                   alpha=0.9, label=event)
+                    else:
+                        ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], marker=markers[hot_i], c=colors[hot_i], alpha=0.9,
+                                   label=event)
 
-                x_red_ev = x_red[y[:, hot_i] == 1.][:self.plot_points_per_class]
-                if self.final_dim == 3:
-                    ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], x_red_ev[:, 2], marker=markers[hot_i], c=colors[hot_i],
-                               alpha=0.9, label=event)
-                else:
-                    ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], marker=markers[hot_i], c=colors[hot_i], alpha=0.9,
-                               label=event)
+                box = ax.get_position()
+                ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                                 box.width, box.height * 0.9])
 
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                             box.width, box.height * 0.9])
-
-            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
-                      fancybox=True, shadow=True, ncol=5, prop={'size': 6})
-            save_path = './plots/%s%s%s-%s-%s/%iD-%s%s%s-%s-%s-%s.eps' % (
-                ('no-muo-' if self.ignore_muon else ''), ('no-fla-' if self.ignore_flasher else ''),
-                red_type,
-                self.pp_type,
-                self.data_type,
-                self.final_dim,
-                ('no-muo-' if self.ignore_muon else ''), ('no-fla-' if self.ignore_flasher else ''),
-                red_type,
-                self.pp_type,
-                self.data_type,
-                os.path.splitext(os.path.basename(self.filepath))[0])
-            if not os.path.exists(os.path.dirname(save_path)):
-                os.makedirs(os.path.dirname(save_path))
-            plt.savefig(save_path)
+                ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+                          fancybox=True, shadow=True, ncol=5, prop={'size': 6})
+                save_path = './plots/%s-%s-%s/%iD-%s-%s-%s-%s-%s.pdf' % (
+                    red_type,
+                    self.pp_type,
+                    self.data_type,
+                    self.final_dim,
+                    '-'.join(['no_' + ig for ig in self.ignore]),
+                    red_type,
+                    self.pp_type,
+                    self.data_type,
+                    os.path.splitext(os.path.basename(self.filepath))[0])
+                if not os.path.exists(os.path.dirname(save_path)):
+                    os.makedirs(os.path.dirname(save_path))
+                plt.savefig(save_path)
 
 
     def plot_tsne(self):
@@ -191,18 +172,26 @@ class TsneVis(object):
             for pp_type in self.post_process_types:
                 self.pp_type = pp_type
 
-                x_pp = np.asarray(self.h5file[self.data_type + '/' + self.pp_type + '/' + self.data_type + '_' + self.pp_type + '_x'])
-                x_raw = np.asarray(self.h5file[self.data_type + '/' + 'raw' + '/' +self.data_type + '_' + 'raw' + '_x'])
-                y = np.asarray(self.h5file[self.data_type + '/' + 'raw' + '/' + self.data_type + '_raw_y'])
+                if self.old:
+                    x_pp = np.asarray(self.h5file[self.data_type + '_' + self.pp_type + '_x'])
+                    x_raw = np.asarray(self.h5file[self.data_type + '_' + 'raw' + '_x'])
+                    y = np.asarray(self.h5file[self.data_type + '_raw_y'])
+                else:
+
+                    x_pp = np.asarray(self.h5file[self.data_type + '/' + self.pp_type + '/' + self.data_type + '_' + self.pp_type + '_x'])
+                    x_raw = np.asarray(self.h5file[self.data_type + '/' + 'raw' + '/' +self.data_type + '_' + 'raw' + '_x'])
+                    y = np.asarray(self.h5file[self.data_type + '/' + 'raw' + '/' + self.data_type + '_raw_y'])
+
+
 
                 indices = self.get_eq_classes_of(y)
                 X = x_pp[indices]
                 x_raw_eq = x_raw[indices]
                 y = y[indices]
 
-                x_ts = self.get_tsne_data(X)
+                x_ts = self.get_tsne_data(X, pp_type, data_type)
 
-                self.save_images_close_to_centroids(y, x_ts, x_raw_eq)
+                #self.save_images_close_to_centroids(y, x_ts, x_raw_eq)
 
 
                 #pca = PCA(n_components=self.final_dim)
@@ -217,7 +206,7 @@ if __name__ == "__main__":
     else:
         filepath = './results/old/192-284-284-10-Tanh-single_20000-rot-100-final.h5'
 
-    plt_tsne = TsneVis(filepath)
+    plt_tsne = TsneVis(filepath,old=True)
     plt_tsne.plot_tsne()
 
 
