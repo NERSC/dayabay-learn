@@ -5,7 +5,6 @@
 import numpy as np
 import logging
 from neon.util.argparser import NeonArgparser
-from neon.backends import gen_backend
 from data_loaders import load_dayabaysingle
 from neon.data import DataIterator
 from neon.initializers import Uniform
@@ -15,44 +14,19 @@ from neon.transforms.activation import Tanh, Identity
 from neon.transforms.cost import SumSquared, MeanSquared
 from neon.models import Model
 import os
-# from matplotlib import pyplot as plt
 from neon.callbacks.callbacks import Callbacks, LossCallback
 import glob
 from os.path import join
 import pickle
 import h5py
-from tsne_visualize import TsneVis
-from sklearn.decomposition import PCA
-from tsne_source_code import tsne
-import time
+from tsne_visualize import Vis
+from util.helper_fxns import save_orig_data, adjust_train_val_test_sizes, save_middle_layer_output
 
 
-def save_middle_layer_output(dataset, dset, model, bneck_width):
-    ix = 0
-    for (x, t) in dataset:
-        for l in model.layers.layers:
-                #forward propagate the data through the deepnet
-                x = l.fprop(x)
-                if l.name == 'middleLayer' or l.name == 'middleActivationLayer': #trying to get middle layer here
-                    ae_x = x.asnumpyarray()
 
-                    #ae_x is transposed from what we expect, so its of size (bneck_width, batch_size)
-                    layer_width, batch_size = ae_x.shape
-                    assert layer_width == bneck_width
 
-                    #data iterator will do wrap around, so in the last batch's last several items
-                    # will be the first several from the first batch
-                    if ix + batch_size > dataset.ndata:
-                        dset[ix:dataset.ndata] = ae_x.T[:dataset.ndata - ix]
-                        # val_arr[ix:dataset.ndata, :] = ae_x.T[:dataset.ndata - ix]
 
-                    else:
-                        dset[ix:ix+batch_size] = ae_x.T
-                        # val_arr[ix:ix+batch_size, :] = ae_x.T
-                        ix += batch_size
-                    break;
-
-def main():
+def main(bneck_width=10, n_layers=3):
     #####setup directories and args and logging
     logger = logging.getLogger()
 
@@ -95,38 +69,16 @@ def main():
 
     #load and split all data from file
     (X_train, y_train), (X_val, y_val), (X_test, y_test), nclass = load_dayabaysingle(path=args.h5file)
-    train_end = args.batch_size * (X_train.shape[0] / args.batch_size)
-    X_train = X_train[:train_end]
-    y_train = y_train[:train_end]
+    X_train, y_train, X_val, y_val, X_test, y_test = adjust_train_val_test_sizes(args.batch_size, X_train, y_train, X_val, y_val, X_test, y_test)
     nin = X_train.shape[1]
 
-
-
-    #make sure size of validation data a multiple of batch size
-    val_end = args.batch_size * (X_val.shape[0] / args.batch_size)
-    X_val = X_val[:val_end]
-    y_val = y_val[:val_end]
-
-
-    #make sure size of test data a multiple of batch size
-    test_end = args.batch_size * (X_test.shape[0] / args.batch_size)
-    X_test = X_test[:test_end]
-    y_test = y_test[:test_end]
-
-    #DataIterator(X, y=None, nclass=None, lshape=None, make_onehot=True)
-    #if y unspecified -> works like autoencoder
     train_set = DataIterator(X_train)
-
     valid_set = DataIterator(X_val)
-
-
     if args.test:
+        train_set = DataIterator(np.vstack((X_train, X_val)))
         test_set = DataIterator(X_test)
 
-    ########
 
-
-    ############ set up network
 
     #Peter initially used AutoUniformGen(), which calculated weights based on activation fxn and size of layer, is deprecated
     init_uni = Uniform(low=-0.1, high=0.1)
@@ -137,28 +89,18 @@ def main():
                                       schedule=Schedule(step_config=1,
                                                         change=1.0 - 10 ** lr_decay_factor))
     activation = Tanh()
-    bneck_width = 10
-    n_layers = 3 #another variable determiend by spearmint
-    layers = []
-    layers.append(Affine(nout=284, init=init_uni, batch_norm=True, activation=Tanh()))
-    layers.append(Affine(nout=284, init=init_uni, batch_norm=True, activation=Tanh()))
-    layers.append(Affine(nout=bneck_width, init=init_uni, act_name='middleLayer',activation=Tanh()))
-    layers.append(Affine(nout=284, init=init_uni, batch_norm=True, activation=Tanh()))
-    layers.append(Affine(nout=284, init=init_uni, batch_norm=True, activation=Tanh()))
-    layers.append(Affine(nout=nin, init=init_uni,activation=Tanh()))
+    conv = dict(init=init_uni, batch_norm=True, activation=Tanh())
+    layers = \
+    [Affine(nout=284, **conv),
+    Affine(284, **conv),
+    Affine(nout= bneck_width, init=init_uni, act_name='middleLayer',activation=Tanh()),
+    Affine(nout=284, **conv),
+    Affine(nout=284, **conv),
+    Affine(nout=nin, init=init_uni,activation=Tanh())]
 
     cost = GeneralizedCost(costfunc=SumSquared())
-
-
     ae = Model(layers=layers)
     ##################
-
-
-    ##########
-    # set up saving data
-
-    #name this model by its widths for the first half of its layers (b/c second half is the same as first -> symmetrical) and the activation fxn and training set size
-    #key of form 192-284-284-10-Tanh-26272 for example
 
     ae_model_key = '{0}-{1}-{2}-{3}-{4}'.format(str(nin),
                                             '-'.join([str(l[0].nout) if isinstance(l, list) else str(l.nout) for l in layers[:(len(layers) / 2)]]),
@@ -190,19 +132,14 @@ def main():
     ae.fit(train_set, optimizer=opt_gdm, num_epochs=args.epochs, cost=cost, callbacks=callbacks)
 
 
-    h5fin.create_dataset('train/raw/train_raw_x', data=X_train)
-    h5fin.create_dataset('train/raw/train_raw_y', data=y_train)
-    h5fin.create_dataset('test/raw/test_raw_x', data=X_test)
-    h5fin.create_dataset('test/raw/test_raw_y', data=y_test)
-    h5fin.create_dataset('val/raw/val_raw_x', data=X_val)
-    h5fin.create_dataset('val/raw/val_raw_y', data=y_val)
+    save_orig_data(h5fin,X_train, y_train, X_val,y_val, X_test, y_test)
 
     #save intermeidate layer values
-    h5ae_tr = h5fin.create_dataset('train/ae/train_ae_x', (X_train.shape[0], bneck_width))
+    h5ae_tr = h5fin.create_dataset('fc-ae/train/x', (X_train.shape[0], bneck_width))
     save_middle_layer_output(train_set, h5ae_tr, ae, bneck_width)
 
 
-    h5ae_val = h5fin.create_dataset('val/ae/val_ae_x', (X_val.shape[0], bneck_width))
+    h5ae_val = h5fin.create_dataset('fc-ae/val/x', (X_val.shape[0], bneck_width))
     save_middle_layer_output(valid_set, h5ae_val, ae, bneck_width)
 
     #val_loss_data = h5py.File(args.output_file)['cost/loss'][:]
@@ -210,7 +147,7 @@ def main():
     #todo add val intermediate metrics to results file which already contains train loss metrics
     #h5fin.create_dataset('cost/loss_val',(args.epochs / args.eval_freq,), data=val_loss_data)
 
-    ts = TsneVis(final_h5_file, reconstruct=False)
+    ts = Vis(final_h5_file, reconstruct=False)
     ts.plot_tsne()
 
     h5fin.close()

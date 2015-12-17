@@ -10,7 +10,7 @@ from peter_old_code.dayabay_dataset_code import dayabay_rotate as dbr
 from operator import mul
 
 def filter_out_zeros(X,y):
-    nonzero_rows = ~np.all(X[:, :-1]==0, axis=1) #cuz label will not be zero
+    nonzero_rows = ~np.all(X[:, : ]==0., axis=1)
     X = X[nonzero_rows]
     y = y[nonzero_rows]
     return X,y
@@ -106,15 +106,19 @@ def load_dayabaysingle(path,
         if normalize:
             #mean center data
             tr_mean = np.mean(X_train)
+            tr_std = np.std(X_train)
 
 
             if not os.path.exists(pkl_dir):
                 os.mkdir(pkl_dir)
             pickle.dump(tr_mean, open(join(pkl_dir, str(num_tr) + '.pkl'), 'w'))
             X_train -= tr_mean
+            X_train /= tr_std
             X_test -= tr_mean
+            X_test /= tr_std
             if validation:
-                 X_val -= tr_mean
+                X_val -= tr_mean
+                X_val /= tr_std
 
     else:
         # X_test = np.vstack(X_eq_cl)
@@ -150,8 +154,8 @@ def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, te
     X = np.asarray(h5_dataset['inputs']).astype('float64')
     y = np.asarray(h5_dataset['targets']).astype('float64')
 
-    X -= np.mean(X)
-    X /= np.std(X)
+    # X -= np.mean(X)
+    # X /= np.std(X)
     X, y = filter_out_zeros(X,y)
     if clev_preproc:
         X = X.reshape(X.shape[0],8,24)
@@ -173,10 +177,23 @@ def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, te
 
 
 
-
     if validation:
         X_train, y_train, X_val, y_val = \
                 split_train_val(X_train, y_train, seed, val_prop, num_tr)
+
+    tr_mean = np.mean(X_train)
+    tr_std = np.std(X_train)
+    X_train -= tr_mean
+    X_test -= tr_mean
+    X_train /= tr_std
+    X_test /= tr_std
+
+    if validation:
+            X_val -= tr_mean
+            X_val /= tr_std
+
+
+
     return (X_train, y_train), (X_val,y_val), (X_test, y_test), nclass
 
 

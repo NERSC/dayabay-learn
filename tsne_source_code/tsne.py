@@ -21,6 +21,8 @@ def Hbeta(D=Math.array([]), beta=1.0):
     # Compute P-row and corresponding perplexity
     P = Math.exp(-D.copy() * beta);
     sumP = sum(P);
+    if sumP == 0.0:
+        print "hey"
 
     H = Math.log(sumP) + beta * Math.sum(D * P) / sumP;
     P = P / sumP;
@@ -46,7 +48,8 @@ def x2p(X=Math.array([]), tol=1e-5, perplexity=30.0):
         # Print progress
         if i % 500 == 0:
             print "Computing P-values for point ", i, " of ", n, "..."
-
+        if i == 1640:
+            print "hey"
         # Compute the Gaussian kernel and entropy for the current precision
         betamin = -Math.inf;
         betamax = Math.inf;
