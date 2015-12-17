@@ -2,6 +2,8 @@ import matplotlib
 matplotlib.use('agg')
 from matplotlib import pyplot as plt
 import numpy as np
+import os
+import h5py
 
 def save_orig_data(h5fin,X_train, y_train, X_val,y_val, X_test, y_test):
     h5fin.create_dataset('raw/train/x', data=X_train)
@@ -74,3 +76,10 @@ def get_eq_classes_of(y, points_per_class, nclass):
     indices = np.asarray([y_ind[y[:, cl] == 1.][:points_per_class] for cl in range(nclass)]).reshape(nclass * points_per_class)
 
     return indices
+
+def create_h5_file(final_dir, tr_size):
+    final_h5_file = os.path.join(final_dir, 'final_results_tr_size_' + str(tr_size) + '.h5')
+    h5fin = h5py.File(final_h5_file, 'w')
+    return h5fin, final_h5_file
+
+

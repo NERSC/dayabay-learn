@@ -20,7 +20,7 @@ from os.path import join
 import pickle
 import h5py
 from tsne_visualize import Vis
-from util.helper_fxns import save_orig_data, adjust_train_val_test_sizes, save_middle_layer_output
+from util.helper_fxns import save_orig_data, adjust_train_val_test_sizes, save_middle_layer_output, create_h5_file
 
 
 
@@ -68,7 +68,7 @@ def main(bneck_width=10, n_layers=3):
     ######set up
 
     #load and split all data from file
-    (X_train, y_train), (X_val, y_val), (X_test, y_test), nclass = load_dayabaysingle(path=args.h5file)
+    (X_train, y_train), (X_val, y_val), (X_test, y_test), nclass = load_dayabaysingle(path=args.h5file, seed=6)
     X_train, y_train, X_val, y_val, X_test, y_test = adjust_train_val_test_sizes(args.batch_size, X_train, y_train, X_val, y_val, X_test, y_test)
     nin = X_train.shape[1]
 
@@ -109,8 +109,7 @@ def main(bneck_width=10, n_layers=3):
 
     args.save_path += '/' + ae_model_key + '-checkpt.pkl'
     args.output_file += '/' + ae_model_key + '-metrics.h5'
-    final_h5_file = join(final_dir, ae_model_key + '-' + str(args.epochs) + ('-test' if args.test else '') + '-final.h5')
-    h5fin = h5py.File(final_h5_file, 'w')
+    h5fin, final_h5_file = create_h5_file(final_dir, X_train.shape[0])
 
     #by not specifying metric and adding in eval_freq to args we should get the val loss saved every <eval_freq> epoch
     callbacks = Callbacks(ae, train_set, args, eval_set=valid_set)
@@ -148,7 +147,7 @@ def main(bneck_width=10, n_layers=3):
     #h5fin.create_dataset('cost/loss_val',(args.epochs / args.eval_freq,), data=val_loss_data)
 
     ts = Vis(final_h5_file, reconstruct=False)
-    ts.plot_tsne()
+    ts.plot()
 
     h5fin.close()
 

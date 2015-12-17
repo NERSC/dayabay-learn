@@ -18,6 +18,7 @@ import itertools
 # from mpl_toolkits.mplot3d import Axes3D
 import sys
 from util.helper_fxns import get_eq_classes_of
+from sklearn.decomposition import PCA
 #self.base_path='/scratch3/scratchdirs/jialin/dayabay/'
 
 
@@ -30,7 +31,8 @@ from util.helper_fxns import get_eq_classes_of
 
 
 class Vis(object):
-    def __init__(self, filepath='./results/192-284-284-10-Tanh-single_20000-rot-100-final.h5', reconstruct=True, old=False, ignore='', plot_tsne=False, highlight_centroid=True, perplexity=50.0, max_iter=500):
+    def __init__(self, filepath='./results/192-284-284-10-Tanh-single_20000-rot-100-final.h5', reconstruct=True, pp_types='conv-ae', data_types='val',
+                 old=False, ignore='', plot_tsne=False, highlight_centroid=True, perplexity=50.0, max_iter=500):
         self.plot_tsne = plot_tsne
         self.filepath = filepath
         self.highlight_centroid = highlight_centroid
@@ -56,12 +58,14 @@ class Vis(object):
         self.event_types = ['ibd_prompt', 'ibd_delay', 'muon', 'flasher', 'other' ]
         self.event_dict = {i: ev for i, ev in enumerate(self.event_types)}
 
-        self.post_process_types = ['conv-ae']
-        self.data_types = ['val']
+        self.post_process_types = pp_types.split(',') #['conv-ae']
+        self.data_types = data_types.split(',') #['val']
         self.pp_type = None
         self.data_type = None
         self.h5file = h5py.File(self.filepath)
 
+    def __del__(self):
+        self.h5file.close()
 
     def save_image(self, vec, name, y_offset=0.3, x_offset=0.69, font_size=5):
         plt.clf()
@@ -75,18 +79,34 @@ class Vis(object):
         plt.savefig(name + '.jpg')
 
 
+    def create_key(self,data_type, pp_type, red_type ):
+        return pp_type + '/' + data_type + '/' + 'x_' + red_type
+
+    def reconstruct_data(self, data_type, pp_type, red_type):
+        key = self.create_key(data_type, pp_type, red_type)
+        calc = True
+        x= None
+        if self.reconstruct:
+            if key in self.h5file:
+                x = np.asarray(self.h5file[key])
+                calc = False
+        return calc, x
+
+
+    def get_pca_data(self, X, data_type, pp_type):
+        calc, x_pca = self.reconstruct_data(data_type, pp_type, 'pca')
+        if calc:
+            print 'calculating pca for %s-%s'%(data_type, pp_type)
+            x_pca = PCA(self.final_dim).fit_transform(X)
+            self.h5file.create_dataset(pp_type + '/' + data_type + '/' + 'x_pca', data=x_pca)
+        return x_pca
 
     def get_tsne_data(self, X, data_type, pp_type):
-        ts_key = data_type + '/' + pp_type + '/' + 'ts_' + data_type + '_' + pp_type + '_x'
-        calc=True
-        if self.reconstruct:
-            if ts_key in self.h5file:
-                x_ts = np.asarray(self.h5file[ts_key])
-                calc = False
+        calc, x_ts = self.reconstruct_data(data_type, pp_type, 'ts')
         if calc:
             x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
                                  max_iter=self.max_iter)
-            self.h5file.create_dataset(ts_key, data=x_ts)
+            self.h5file.create_dataset(self.create_key(data_type, pp_type, 'ts'), data=x_ts)
         return x_ts
 
     def get_centroids(self, x, y):
@@ -164,10 +184,10 @@ class Vis(object):
                 continue
             x_red_ev = x_red[y[:, hot_i] == 1.][:self.plot_points_per_class]
             if self.final_dim == 3:
-                ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], x_red_ev[:, 2], marker='o', c=colors[hot_i],
+                ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1 ], x_red_ev[:, 2], marker='o', c=colors[hot_i],
                            alpha=0.9, label=event)
             else:
-                ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], marker='o', edgecolors=colors[hot_i], c=colors[hot_i], alpha=0.1,
+                ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], marker='o', edgecolors=colors[hot_i], c=colors[hot_i], alpha=0.9,
                            label=event)
 
                 if self.highlight_centroid:
@@ -180,7 +200,9 @@ class Vis(object):
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
                   fancybox=True, shadow=True, ncol=5, prop={'size': 12})
 
+
         save_path = self.generate_save_path(red_type, ignores, data_type, pp_type)
+        print save_path
         plt.savefig(save_path)
 
 
@@ -192,14 +214,14 @@ class Vis(object):
                 indices = get_eq_classes_of(y, self.tsne_points_per_class, self.nclass)
                 x_eq, x_raw_eq, y_eq = map(lambda c : c[indices], [x_pp, x_raw, y])
 
+                x_pca = self.get_pca_data(x_pp,data_type, pp_type)
+                self._plot(x_pca, 'PCA', y, self.ignore, data_type, pp_type)
+                #self.save_images_close_to_centroids(y, x_pca, x_raw)
                 if self.plot_tsne:
                     x_ts = self.get_tsne_data(x_eq, pp_type, data_type)
                     self._plot(x_ts,'t-SNE', y_eq, self.ignore)
 
-                x_pca = tsne.pca(x_eq, self.final_dim)
-                self.h5file.create_dataset(pp_type + '/' + data_type + '/' + 'x_pca', data=x_pca)
-                self._plot(x_pca, 'PCA', y_eq, self.ignore, data_type, pp_type)
-                #self.save_images_close_to_centroids(y, x_pca, x_raw)
+
 
 
 
