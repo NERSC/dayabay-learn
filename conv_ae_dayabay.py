@@ -18,8 +18,8 @@ from tsne_visualize import Vis
 from util.helper_fxns import plot_train_val_learning_curve,\
     save_orig_data, \
     save_middle_layer_output, \
-    adjust_train_val_test_sizes, create_h5_file
-
+    adjust_train_val_test_sizes, create_h5_file, stop_func
+import numpy as np
 matplotlib.use('agg')
 # parse the command line arguments
 parser = NeonArgparser(__doc__)
@@ -41,7 +41,7 @@ parser.set_defaults(batch_size=100,h5file='/global/homes/p/pjsadows/data/dayabay
                     serialize=2, epochs=100, learn_rate=0.0001, model_file=False,eval_freq=1, test=False, save_path=model_files_dir, wrap_pad_trick=False, cylinder_local_trick=False)
 args = parser.parse_args()
 num_epochs = args.epochs
-
+args.learn_rate = float(args.learn_rate)
 (X_train, y_train), (X_val,y_val), (X_test, y_test), nclass = load_dayabay_conv(path=args.h5file,clev_preproc=False, seed=6)
 
 X_train, y_train, X_val, y_val, X_test, y_test = adjust_train_val_test_sizes(args.batch_size, X_train, y_train, X_val, y_val, X_test, y_test)
@@ -49,6 +49,9 @@ X_train, y_train, X_val, y_val, X_test, y_test = adjust_train_val_test_sizes(arg
 train_set = DataIterator(X_train, lshape=(1, 8, 24), make_onehot=False)
 valid_set = DataIterator(X_val, lshape=(1, 8, 24), make_onehot=False)
 
+if args.test:
+    train_set = DataIterator(np.vstack(X_train, X_val), lshape=(1, 8, 24), make_onehot=False)
+    test_set = DataIterator(X_test, lshape=(1, 8, 24), make_onehot=False)
 
 w_init = HeWeightInit()
 
@@ -80,26 +83,40 @@ model_key = '{0}-{1}-{2}-{3}-{4}'.format(X_train.shape[1],'-'.join([(l.name[0] i
  ('-' + '_'.join(str(l.fshape).split(' ')) if 'Pooling' in l.name or 'Conv' in l.name or 'conv' in l.name else '') for l in mlp.layers.layers]), str(args.epochs), str(X_train.shape[0]),str(X_train.shape[1]))
 
 args.save_path = model_files_dir + '/' + model_key + '.pkl'
-h5fin, final_h5_file = create_h5_file(final_dir, X_train.shape[0])
+h5fin, final_h5_file = create_h5_file(final_dir, X_train.shape[0],args.epochs, args.learn_rate)
 
 callbacks = Callbacks(mlp, train_set, args)
-callbacks.add_callback(LossCallback(( h5fin.get('train_loss', False) if h5fin.get('train_loss', False) else h5fin.create_group('train_loss')), mlp, eval_set=train_set, epoch_freq=args.eval_freq))
-callbacks.add_callback(LossCallback(( h5fin.get('valid_loss', False) if h5fin.get('valid_loss', False) else h5fin.create_group('valid_loss')), mlp, eval_set=valid_set, epoch_freq=args.eval_freq))
+eval_set=None
+if not args.test:
+    callbacks.add_callback(LossCallback(( h5fin.get('train_loss', False) if 'train_loss' in h5fin else h5fin.create_group('train_loss')), mlp, eval_set=train_set, epoch_freq=args.eval_freq))
+    callbacks.add_callback(LossCallback(( h5fin.get('valid_loss', False) if 'valid_loss' in h5fin else h5fin.create_group('valid_loss')), mlp, eval_set=valid_set, epoch_freq=args.eval_freq))
+    #callbacks.add_early_stop_callback(stop_func)
+    eval_set = valid_set
 # Fit the model
-mlp.fit(train_set, optimizer=opt_gdm, num_epochs=args.epochs, cost=cost, callbacks=callbacks)
+mlp.fit(train_set, eval_set=eval_set, optimizer=opt_gdm, num_epochs=args.epochs, cost=cost, callbacks=callbacks)
 
-h5ae_val = h5fin.create_dataset('conv-ae/val/x', (X_val.shape[0], bneck_width))
-save_middle_layer_output(valid_set, h5ae_val, mlp, bneck_width)
-reconstructed_val = mlp.get_outputs(valid_set)
-h5fin.create_dataset('conv-ae/val/x_reconstructed', data=reconstructed_val)
+if not args.test:
+    h5ae_val = h5fin.create_dataset('conv-ae/val/x', (X_val.shape[0], bneck_width)) if  'conv-ae/val/x' not in h5fin else h5fin['conv-ae/val/x']
+    save_middle_layer_output(valid_set, h5ae_val, mlp, bneck_width)
+    reconstructed_val = mlp.get_outputs(valid_set)
+    h5fin.create_dataset('conv-ae/val/x_reconstructed', data=reconstructed_val)
+    data_types='val'
+
+else:
+    h5ae_test = h5fin.create_dataset('conv-ae/test/x', (X_test.shape[0], bneck_width)) if  'conv-ae/test/x' not in h5fin else h5fin['conv-ae/test/x']
+    save_middle_layer_output(test_set, h5ae_test, mlp, bneck_width)
+    reconstructed_test = mlp.get_outputs(test_set)
+    h5fin.create_dataset('conv-ae/test/x_reconstructed', data=reconstructed_test)
+    data_types='test'
+
 
 save_orig_data(h5fin,X_train, y_train, X_val,y_val, X_test, y_test)
 plot_train_val_learning_curve(h5fin,final_h5_file)
 h5fin.close()
 
-v = Vis(final_h5_file, old=False, plot_tsne=False, reconstruct=False, pp_types='conv-ae,raw')
+v = Vis(final_h5_file, old=False, plot_tsne=True, reconstruct=False, pp_types='conv-ae,raw', data_types=data_types)
 v.plot()
 
-pickle.dump(mlp.serialize(), open(os.path.join(model_files_dir, '%s-%s.pkl'%(model_key, str(args.epochs))), 'w'))
+pickle.dump(mlp.serialize(), open(os.path.join(model_files_dir, '%s-%s-%s.pkl'%(model_key, str(args.epochs), str(args.learn_rate))), 'w'))
 
 

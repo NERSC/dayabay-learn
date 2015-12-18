@@ -151,7 +151,7 @@ def load_dayabaysingle(path,
 def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, test_prop=0.2, validation=True, val_prop=0.2, seed=3):
     nclass=5
     h5_dataset = h5py.File(path)
-    X = np.asarray(h5_dataset['inputs']).astype('float64')
+    X = np.asarray(h5_dataset['inputs'][:,:192]).astype('float64')
     y = np.asarray(h5_dataset['targets']).astype('float64')
 
     # X -= np.mean(X)
@@ -181,16 +181,16 @@ def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, te
         X_train, y_train, X_val, y_val = \
                 split_train_val(X_train, y_train, seed, val_prop, num_tr)
 
-    tr_mean = np.mean(X_train)
-    tr_std = np.std(X_train)
-    X_train -= tr_mean
-    X_test -= tr_mean
-    X_train /= tr_std
-    X_test /= tr_std
-
-    if validation:
-            X_val -= tr_mean
-            X_val /= tr_std
+    # tr_mean = np.mean(X_train)
+    # tr_std = np.std(X_train)
+    # X_train -= tr_mean
+    # X_test -= tr_mean
+    # X_train /= tr_std
+    # X_test /= tr_std
+    #
+    # if validation:
+    #         X_val -= tr_mean
+    #         X_val /= tr_std
 
 
 

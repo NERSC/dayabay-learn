@@ -32,13 +32,14 @@ from sklearn.decomposition import PCA
 
 class Vis(object):
     def __init__(self, filepath='./results/192-284-284-10-Tanh-single_20000-rot-100-final.h5', reconstruct=True, pp_types='conv-ae', data_types='val',
-                 old=False, ignore='', plot_tsne=False, highlight_centroid=True, perplexity=50.0, max_iter=500):
+                 old=False, ignore='', plot_tsne=False, plot_pca=True, highlight_centroid=True, perplexity=50.0, max_iter=500):
         self.plot_tsne = plot_tsne
         self.filepath = filepath
         self.highlight_centroid = highlight_centroid
         self.raw_dim = 192
         self.im_path = "./images"
         self.old = old
+        self.plot_pca = plot_pca
         if not os.path.exists(self.im_path):
             os.mkdir(self.im_path)
         self.final_dim = 2
@@ -213,13 +214,13 @@ class Vis(object):
                 x_pp, x_raw, y = self.get_data(data_type, pp_type)
                 indices = get_eq_classes_of(y, self.tsne_points_per_class, self.nclass)
                 x_eq, x_raw_eq, y_eq = map(lambda c : c[indices], [x_pp, x_raw, y])
-
-                x_pca = self.get_pca_data(x_pp,data_type, pp_type)
-                self._plot(x_pca, 'PCA', y, self.ignore, data_type, pp_type)
+                if self.plot_pca:
+                    x_pca = self.get_pca_data(x_pp,data_type, pp_type)
+                    self._plot(x_pca, 'PCA', y, self.ignore, data_type, pp_type)
                 #self.save_images_close_to_centroids(y, x_pca, x_raw)
                 if self.plot_tsne:
                     x_ts = self.get_tsne_data(x_eq, pp_type, data_type)
-                    self._plot(x_ts,'t-SNE', y_eq, self.ignore)
+                    self._plot(x_ts,'t-SNE', y_eq, self.ignore, data_type, pp_type)
 
 
 

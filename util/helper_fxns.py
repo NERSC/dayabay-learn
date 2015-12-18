@@ -4,6 +4,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 import os
 import h5py
+from collections import deque
+
 
 def save_orig_data(h5fin,X_train, y_train, X_val,y_val, X_test, y_test):
     h5fin.create_dataset('raw/train/x', data=X_train)
@@ -77,9 +79,26 @@ def get_eq_classes_of(y, points_per_class, nclass):
 
     return indices
 
-def create_h5_file(final_dir, tr_size):
-    final_h5_file = os.path.join(final_dir, 'final_results_tr_size_' + str(tr_size) + '.h5')
+def create_h5_file(final_dir, tr_size, epochs, learn_rate):
+    final_h5_file = os.path.join(final_dir, 'final_results_tr_size_' + str(tr_size) + '_' + str(epochs) + '_' + str(learn_rate) + '.h5')
     h5fin = h5py.File(final_h5_file, 'w')
     return h5fin, final_h5_file
+
+def stop_func(s,v):
+    if s is None:
+        return (deque([v],maxlen=5), False)
+    s.append(v)
+    return (s, v == np.mean(s))
+
+def save_image(vec, name, y_offset=0.3, x_offset=0.69, font_size=5):
+    plt.clf()
+    im = vec.reshape(8, 24)
+    ax = plt.imshow(im, interpolation='none')
+    left, right, bottom, top = ax.get_extent()
+    plt.colorbar(orientation="horizontal")
+    for x in range(im.shape[0]):
+        for y in range(im.shape[1]):
+            plt.text(left + y_offset + y, top + x_offset + x, '%.2f' % (im[x, y]), fontsize=font_size)
+    plt.savefig(name + '.jpg')
 
 
