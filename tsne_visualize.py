@@ -46,7 +46,7 @@ class Vis(object):
         self.perp = perplexity
         self.max_iter = max_iter
         self.base_path = './'
-        self.cent_images_per_class = 5
+        self.cent_images_per_class = 1
         self.tsne_points_per_class = 500
         self.plot_points_per_class = 500
         self.nclass = 5
@@ -65,6 +65,7 @@ class Vis(object):
         self.data_type = None
         self.h5file = h5py.File(self.filepath)
 
+
     def __del__(self):
         self.h5file.close()
 
@@ -79,6 +80,22 @@ class Vis(object):
                 plt.text(left + y_offset + y, top + x_offset + x, '%.2f' % (im[x, y]), fontsize=font_size)
         plt.savefig(name + '.jpg')
 
+    def save_z_ims(self,plot_name, z, path, *args):
+        plt.figure(1)
+        plt.clf()
+        for i in range(z):
+            sp = plt.subplot(z,1,i + 1)
+            im = args[i].reshape(8,24)
+            sp.imshow(im,interpolation='none' )
+
+        #plt.title(plot_name)
+        #plt.colorbar(orientation="horizontal")
+
+
+        if not os.path.exists(path):
+            os.mkdir(path)
+        plt.savefig(path + plot_name.replace(' ', '_') + '.jpg')
+
 
     def create_key(self,data_type, pp_type, red_type ):
         return pp_type + '/' + data_type + '/' + 'x_' + red_type
@@ -89,7 +106,9 @@ class Vis(object):
         x= None
         if self.reconstruct:
             if key in self.h5file:
+                print "reconstructing " + pp_type + " data..."
                 x = np.asarray(self.h5file[key])
+
                 calc = False
         return calc, x
 
@@ -105,44 +124,63 @@ class Vis(object):
     def get_tsne_data(self, X, data_type, pp_type):
         calc, x_ts = self.reconstruct_data(data_type, pp_type, 'ts')
         if calc:
+            print "calclating tsne... "
             x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
                                  max_iter=self.max_iter)
-            self.h5file.create_dataset(self.create_key(data_type, pp_type, 'ts'), data=x_ts)
+            key = self.create_key(data_type, pp_type, 'ts')
+            if key in self.h5file:
+                self.h5file.__delitem__(key)
+            self.h5file.create_dataset(key, data=x_ts)
         return x_ts
 
-    def get_centroids(self, x, y):
-        centroids = np.asarray([np.mean(x[[y[:, cl] == 1.]], axis=0) for cl in range(self.nclass)])
-        return centroids
+    def get_event_num(self, event_name):
+        return self.event_types.index(event_name)
 
-    def save_images_close_to_centroids(self, y, x, x_raw_eq, pp_name):
-        #find centroid of each class
-        centroids = self.get_centroids(x,y)
-        class_arr = np.asarray([x[y[:, cl] == 1.] for cl in range(self.nclass)])
+    def get_array_of_all_event(self,x,y,event_name):
+        num = self.get_event_num(event_name)
 
-        #find closest t-sne points for each class for each centroid of the classes, so
-        diff = np.asarray([[arr - cent for cent in centroids] for arr in class_arr]) ** 2
+        return x[y[:, num] == 1.]
 
-        ix = np.argmin(diff[:, :, :, 0] + diff[:, :, :, 1], axis=2)
-        ix = np.argsort(diff[:, :, :, 0] + diff[:, :, :, 1], axis=2)[:,:,:self.cent_images_per_class]
+    def get_centroid(self, x, y, label_num):
+        return np.mean(x[[y[:, label_num] == 1.]], axis=0)
+
+    def get_j_closest_to_centroid_of_k(self,x,y,event_j,event_k, num_points):
+        j_num = self.get_event_num(event_j)
+        k_num = self.get_event_num(event_k)
+        cent = self.get_centroid(x,y, label_num=k_num)
+        event_j_ex = self.get_array_of_all_event(x,y, event_j)
+        l2_dist = np.sum((event_j_ex - cent) **2, axis = 1)
+
+        #returns index to array of all j's (so to use ix_j, you must do (x[y[:, j_num]] == 1)[ix_j]
+        ix_j = np.argsort(l2_dist, axis =0)[:num_points]
+        return ix_j
 
 
-        #find the corresponding raw data to these closest points, so xij is the image of class i that is closest to the cetnroid for class j
-        im_matrix = np.asarray([x_raw_eq[self.tsne_points_per_class * n + i, :] for n, i in enumerate(ix)])
-        for cl in range(self.nclass):
-            for cent in range(self.nclass):
-                save_dir = self.im_path
-                for ext in [self.pp_type, self.data_type,'%s_close_to_cent_of_%s' % (self.event_dict[cl], self.event_dict[cent])]:
-                    save_dir = os.path.join(save_dir, ext)
-                    if not os.path.exists(save_dir):
-                        os.mkdir(save_dir)
-                for im_no in range(self.cent_images_per_class):
-                    im_name = '%s-im_of_class_%s_closes_to_centroid_of_class_%s_%s_%s_%i' % (
-                        pp_name,self.event_dict[cl], self.event_dict[cent], self.pp_type, self.data_type, im_no)
-                    self.save_image(im_matrix[cl, cent,im_no], os.path.join(save_dir, im_name))
+
+    def save_image_j_close_to_centroid_k(self, y, x, x_raw,j, k, pp_type, x_rec=None):
+
+        event = j
+        cent = k
+        event_num = self.get_event_num(event)
+        ixs = self.get_j_closest_to_centroid_of_k(x,y,event, cent, self.cent_images_per_class)
+        raw_ims = self.get_array_of_all_event(x_raw, y, event)
+        i = 0
+        ix = ixs[i]
+        raw_im = raw_ims[ix]
+        name = '%s_%s_' %(event, cent) + str(ix)
+        if x_rec is not None:
+            rec_ims = self.get_array_of_all_event(x_rec, y, event)
+            rec_im = rec_ims[ix]
+            self.save_z_ims(name, 2, 'images/reconstructed/' + pp_type + '/', raw_im, rec_im)
+        else:
+            self.save_image(raw_im,name)
+
+        #returns index into array of just one class to get ith image
+        return ix, i, name
 
 
     def generate_save_path(self, red_type, ignores, data_type, pp_type):
-        save_path = './plots/%s-%s-%s/%s-%iD-%s-%s-%s-%s-%s.pdf' % (
+        save_path = './plots/%s-%s-%s/%s-%iD-%s-%s-%s-%s-%s.jpg' % (
                         red_type,
                         pp_type,
                         data_type,
@@ -170,7 +208,13 @@ class Vis(object):
         return x_pp, x_raw, y
 
 
-    def _plot(self, x_red, red_type, y, ignores, data_type,pp_type):
+    def _plot(self, x_red, red_type, y, ignores, data_type,pp_type, x_raw, x_rec=None):
+        d={}
+        for event in self.event_types:
+            for cent in self.event_types:
+
+                    ix, i, name = self.save_image_j_close_to_centroid_k( y, x_red, x_raw, event, cent, pp_type, x_rec=x_rec)
+                    d[event + '_' + cent] = (ix, name)
         colors = ['b', 'r', 'g', 'y', 'm']
         kwargs = {}
         if self.final_dim == 3:
@@ -179,11 +223,11 @@ class Vis(object):
         fig = plt.figure(1)
         plt.clf()
         ax = fig.add_subplot(111, **kwargs)
-        centroids = self.get_centroids(x_red,y)
+
         for hot_i, event in enumerate(self.event_types):
             if event in ignores:
                 continue
-            x_red_ev = x_red[y[:, hot_i] == 1.][:self.plot_points_per_class]
+            x_red_ev = x_red[y[:, hot_i] == 1.]#[:self.plot_points_per_class]
             if self.final_dim == 3:
                 ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1 ], x_red_ev[:, 2], marker='o', c=colors[hot_i],
                            alpha=0.9, label=event)
@@ -192,7 +236,18 @@ class Vis(object):
                            label=event)
 
                 if self.highlight_centroid:
-                    ax.scatter(centroids[hot_i, 0], centroids[hot_i, 1], edgecolors='black',  marker='s', c=colors[hot_i])
+                    centroid = self.get_centroid(x_red, y, hot_i)
+                    ax.scatter(centroid[0], centroid[1], edgecolors='black',  marker='s', c=colors[hot_i])
+
+            for i,k in enumerate(d.keys()):
+                if event == k.split('_')[0] and event == k.split('_')[1]:
+                    ix, name = d[k]
+                    print x_red_ev[ix,0], x_red_ev[ix,1]
+                    plt.annotate(name, xy= (x_red_ev[ix,0], x_red_ev[ix,1]),  xytext=(5*i,5*i),
+                        textcoords = 'offset points', ha='right', va = 'bottom',
+                        bbox = dict(boxstyle = 'round,pad=0.', fc = 'yellow', alpha = 0.5),
+                        arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0'), fontsize=10)
+
 
         box = ax.get_position()
         ax.set_position([box.x0, box.y0 + box.height * 0.1,
@@ -201,7 +256,7 @@ class Vis(object):
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
                   fancybox=True, shadow=True, ncol=5, prop={'size': 12})
 
-
+        #plt.show()
         save_path = self.generate_save_path(red_type, ignores, data_type, pp_type)
         print save_path
         plt.savefig(save_path)
@@ -210,17 +265,19 @@ class Vis(object):
     def plot(self):
         for data_type in self.data_types:
             for pp_type in self.post_process_types:
-
+                x_rec = self.h5file.get('conv-ae' + '/' + data_type + '/x_reconstructed', None)
+                if x_rec:
+                    x_rec = np.asarray(x_rec)
                 x_pp, x_raw, y = self.get_data(data_type, pp_type)
                 indices = get_eq_classes_of(y, self.tsne_points_per_class, self.nclass)
                 x_eq, x_raw_eq, y_eq = map(lambda c : c[indices], [x_pp, x_raw, y])
-                if self.plot_pca:
-                    x_pca = self.get_pca_data(x_pp,data_type, pp_type)
-                    self._plot(x_pca, 'PCA', y, self.ignore, data_type, pp_type)
-                #self.save_images_close_to_centroids(y, x_pca, x_raw)
+                # if self.plot_pca:
+                #     x_pca = self.get_pca_data(x_pp,data_type, pp_type)
+                #     self._plot(x_pca, 'PCA', y, self.ignore, data_type, pp_type)
+
                 if self.plot_tsne:
-                    x_ts = self.get_tsne_data(x_eq, pp_type, data_type)
-                    self._plot(x_ts,'t-SNE', y_eq, self.ignore, data_type, pp_type)
+                    x_ts = self.get_tsne_data(x_pp, pp_type, data_type)
+                    self._plot(x_ts,'t-SNE', y, self.ignore, data_type, pp_type, x_raw, x_rec)
 
 
 
@@ -230,10 +287,15 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         filepath = sys.argv[1]
     else:
-        filepath = './results/old/192-284-284-10-Tanh-single_20000-rot-100-final.h5'
+        filepath = './results/final_results_tr_size_31700200.0005.h5'
 
-    pl = Vis(filepath, reconstruct=False, old=True, ignore='other,flasher,ibd_delay')
-    pl.plot()
+    max_iter=10
+
+    # pl = Vis(filepath, reconstruct=True, old=True)
+    # pl.plot()
+    v = Vis(filepath, old=False, plot_tsne=True,
+            reconstruct=True, pp_types='conv-ae', data_types='val', max_iter=max_iter)
+    v.plot()
 
 
 

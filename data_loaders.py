@@ -25,19 +25,31 @@ def get_equal_per_class(X,y, nclass):
     y_eq_cl = tuple([y[y[:, cl] == 1.][:min_class_count, :] for cl in range(nclass)])
     return X_eq_cl, y_eq_cl, min_class_count
 
-def split_train_test(X,y,nclass, test_prop, seed):
+def split_train_test(X,y,nclass, test_prop, seed, eq_class=True):
+    if eq_class:
+        X_eq_cl, y_eq_cl, min_class_count = get_equal_per_class(X,y,nclass)
+        num_ex_per_class = min_class_count
+        num_ex = num_ex_per_class * nclass
+        num_tr_per_class = int((1-test_prop) * num_ex_per_class)
+        num_tr = int( (1-test_prop) * num_ex)
+        i_cl = np.arange(min_class_count)
+        np.random.RandomState(seed).shuffle(i_cl)
+        X_train = np.vstack(tuple([x_cl[i_cl[:num_tr_per_class]] for x_cl in X_eq_cl]))
+        y_train = np.vstack(tuple([y_cl[i_cl[:num_tr_per_class]] for y_cl in y_eq_cl]))
+        X_test = np.vstack(tuple([x_cl[i_cl[num_tr_per_class:]] for x_cl in X_eq_cl]))
+        y_test = np.vstack(tuple([y_cl[i_cl[num_tr_per_class:]] for y_cl in y_eq_cl]))
+    else:
+        num_ex = X.shape[0]
+        i = np.arange(X.shape[0])
+        np.random.RandomState(seed).shuffle(i)
+        X_test = X[i[:test_prop * num_ex]]
+        X_train  = X[i[test_prop * num_ex:]]
 
-    X_eq_cl, y_eq_cl, min_class_count = get_equal_per_class(X,y,nclass)
-    num_ex_per_class = min_class_count
-    num_ex = num_ex_per_class * nclass
-    num_tr_per_class = int((1-test_prop) * num_ex_per_class)
-    num_tr = int( (1-test_prop) * num_ex)
-    i_cl = np.arange(min_class_count)
-    np.random.RandomState(seed).shuffle(i_cl)
-    X_train = np.vstack(tuple([x_cl[i_cl[:num_tr_per_class]] for x_cl in X_eq_cl]))
-    y_train = np.vstack(tuple([y_cl[i_cl[:num_tr_per_class]] for y_cl in y_eq_cl]))
-    X_test = np.vstack(tuple([x_cl[i_cl[num_tr_per_class:]] for x_cl in X_eq_cl]))
-    y_test = np.vstack(tuple([y_cl[i_cl[num_tr_per_class:]] for y_cl in y_eq_cl]))
+        y_train =  y[i[test_prop * num_ex:]]
+        y_test =  y[i[:test_prop * num_ex]]
+
+        num_tr = X_train.shape[0]
+
     return X_train, y_train, X_test, y_test, num_tr
 
 def split_train_val(X_train, y_train, seed, val_prop, num_tr):
@@ -148,11 +160,14 @@ def load_dayabaysingle(path,
 
     return ret
 
-def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, test_prop=0.2, validation=True, val_prop=0.2, seed=3):
+def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, test_prop=0.2, validation=True, val_prop=0.2, seed=3, get_y=True, eq_class=True):
     nclass=5
     h5_dataset = h5py.File(path)
     X = np.asarray(h5_dataset['inputs'][:,:192]).astype('float64')
-    y = np.asarray(h5_dataset['targets']).astype('float64')
+    if get_y:
+        y = np.asarray(h5_dataset['targets']).astype('float64')
+    else:
+        y = np.ones((X.shape[0],5))
 
     # X -= np.mean(X)
     # X /= np.std(X)
@@ -173,7 +188,7 @@ def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, te
 
 
     if not just_test:
-        X_train, y_train, X_test, y_test, num_tr = split_train_test(X_t,y,nclass, test_prop, seed)
+        X_train, y_train, X_test, y_test, num_tr = split_train_test(X_t,y,nclass, test_prop, seed,eq_class)
 
 
 

@@ -16,7 +16,8 @@ def save_orig_data(h5fin,X_train, y_train, X_val,y_val, X_test, y_test):
     h5fin.create_dataset('raw/val/y', data=y_val)
 
 
-def plot_train_val_learning_curve(h5fin,final_h5_file):
+def plot_train_val_learning_curve(final_h5_file):
+    h5fin = h5py.File(final_h5_file)
     plt.clf()
     v_loss = np.asarray(h5fin['valid_loss/cost/loss'])
     t_loss = np.asarray(h5fin['train_loss/cost/loss'])
@@ -79,8 +80,8 @@ def get_eq_classes_of(y, points_per_class, nclass):
 
     return indices
 
-def create_h5_file(final_dir, tr_size, epochs, learn_rate):
-    final_h5_file = os.path.join(final_dir, 'final_results_tr_size_' + str(tr_size) + '_' + str(epochs) + '_' + str(learn_rate) + '.h5')
+def create_h5_file(final_dir, *args):
+    final_h5_file = os.path.join(final_dir, 'final_results_tr_size' + '_'.join(map(lambda x: str(x), args)) + '.h5')
     h5fin = h5py.File(final_h5_file, 'w')
     return h5fin, final_h5_file
 

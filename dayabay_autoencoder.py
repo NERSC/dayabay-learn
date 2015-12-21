@@ -30,6 +30,7 @@ def main(bneck_width=10, n_layers=3):
     #####setup directories and args and logging
     logger = logging.getLogger()
 
+
     parser = NeonArgparser()
 
     model_files_dir = './model_files/fc-ae'
