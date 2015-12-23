@@ -44,12 +44,14 @@ class ConvAe(object):
         parser.add_argument('--wrap_pad_trick')
         parser.add_argument('--cylinder_local_trick')
         parser.add_argument('--bneck_width')
+        parser.add_argument('--max_tsne_iter')
         parser.set_defaults(batch_size=100,h5file='/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5',
                     serialize=2, epochs=100, learn_rate=0.0001, model_file=False,eval_freq=1, test=False, save_path=self.model_files_dir,
-                    wrap_pad_trick=False, cylinder_local_trick=False, bneck_width=10)
+                    wrap_pad_trick=False, cylinder_local_trick=False, bneck_width=10, max_tsne_iter=500)
 
         args = parser.parse_args()
         args.learn_rate = float(args.learn_rate)
+        args.max_tsne_iter = int(args.max_tsne_iter)
         return args
 
     def setup_dirs(self,**kwargs):
@@ -175,7 +177,7 @@ class ConvAe(object):
 
 
 
-        v = Vis(self.final_h5_filename, old=False, plot_tsne=True, reconstruct=False, pp_types='conv-ae,raw', data_types=self.eval_data_type)
+        v = Vis(self.final_h5_filename, old=False, plot_tsne=True, reconstruct=False, pp_types='conv-ae,raw', data_types=self.eval_data_type, max_iter=self.args.max_tsne_iter)
         v.plot()
 
         pickle.dump(mlp.serialize(), open(os.path.join(self.model_files_dir, '%s-%s-%s.pkl'%(self.model_key, str(self.args.epochs), str(self.args.learn_rate))), 'w'))

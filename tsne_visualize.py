@@ -46,7 +46,7 @@ class Vis(object):
         self.perp = perplexity
         self.max_iter = max_iter
         self.base_path = './'
-        self.cent_images_per_class = 1
+        self.cent_images_per_class = 3
         self.tsne_points_per_class = 500
         self.plot_points_per_class = 500
         self.nclass = 5
@@ -179,8 +179,8 @@ class Vis(object):
         return ix, i, name
 
 
-    def generate_save_path(self, red_type, ignores, data_type, pp_type):
-        save_path = './plots/%s-%s-%s/%s-%iD-%s-%s-%s-%s-%s.jpg' % (
+    def generate_save_path(self, red_type, ignores, data_type, pp_type, with_annot=False):
+        save_path = './plots/%s-%s-%s/%s-%iD-%s-%s-%s-%s-%s-%s.jpg' % (
                         red_type,
                         pp_type,
                         data_type,
@@ -190,6 +190,7 @@ class Vis(object):
                         pp_type,
                         data_type,
                         str(self.perp) if red_type == 't-SNE' else '',
+                        "annot" if with_annot else '',
                         os.path.splitext(os.path.basename(self.filepath))[0])
         if not os.path.exists(os.path.dirname(save_path)):
             os.makedirs(os.path.dirname(save_path))
@@ -208,7 +209,7 @@ class Vis(object):
         return x_pp, x_raw, y
 
 
-    def _plot(self, x_red, red_type, y, ignores, data_type,pp_type, x_raw, x_rec=None):
+    def _plot(self, x_red, red_type, y, ignores, data_type,pp_type, x_raw, x_rec=None, with_annot=False):
         d={}
         for event in self.event_types:
             for cent in self.event_types:
@@ -232,32 +233,33 @@ class Vis(object):
                 ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1 ], x_red_ev[:, 2], marker='o', c=colors[hot_i],
                            alpha=0.9, label=event)
             else:
-                ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], marker='o', edgecolors=colors[hot_i], c=colors[hot_i], alpha=0.9,
-                           label=event)
+                ax.scatter(x_red_ev[:, 0], x_red_ev[:, 1], marker='o',  c=colors[hot_i], alpha=0.9,
+                           label=event) #edgecolors=colors[hot_i],
 
                 if self.highlight_centroid:
                     centroid = self.get_centroid(x_red, y, hot_i)
                     ax.scatter(centroid[0], centroid[1], edgecolors='black',  marker='s', c=colors[hot_i])
 
-            for i,k in enumerate(d.keys()):
-                if event == k.split('_')[0] and event == k.split('_')[1]:
-                    ix, name = d[k]
-                    print x_red_ev[ix,0], x_red_ev[ix,1]
-                    plt.annotate(name, xy= (x_red_ev[ix,0], x_red_ev[ix,1]),  xytext=(5*i,5*i),
-                        textcoords = 'offset points', ha='right', va = 'bottom',
-                        bbox = dict(boxstyle = 'round,pad=0.', fc = 'yellow', alpha = 0.5),
-                        arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0'), fontsize=10)
+            if with_annot:
+                for i,k in enumerate(d.keys()):
+                    # if event == k.split('_')[0] and event == k.split('_')[1]:
+                        ix, name = d[k]
+                        print x_red_ev[ix,0], x_red_ev[ix,1]
+                        plt.annotate(name, xy= (x_red_ev[ix,0], x_red_ev[ix,1]),  xytext=(5*i,5*i),
+                            textcoords = 'offset points', ha='right', va = 'bottom',
+                            bbox = dict(boxstyle = 'round,pad=0.', fc = 'yellow', alpha = 0.5),
+                            arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0'), fontsize=10)
 
-
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0 + box.height * 0.1,
-                         box.width, box.height * 0.9])
-
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
-                  fancybox=True, shadow=True, ncol=5, prop={'size': 12})
+        #
+        # box = ax.get_position()
+        # ax.set_position([box.x0, box.y0 + box.height * 0.1,
+        #                  box.width, box.height * 0.9])
+        #
+        # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+        #           fancybox=True, shadow=True, ncol=5, prop={'size': 12})
 
         #plt.show()
-        save_path = self.generate_save_path(red_type, ignores, data_type, pp_type)
+        save_path = self.generate_save_path(red_type, ignores, data_type, pp_type,with_annot)
         print save_path
         plt.savefig(save_path)
 
@@ -278,6 +280,7 @@ class Vis(object):
                 if self.plot_tsne:
                     x_ts = self.get_tsne_data(x_pp, pp_type, data_type)
                     self._plot(x_ts,'t-SNE', y, self.ignore, data_type, pp_type, x_raw, x_rec)
+                    self._plot(x_ts,'t-SNE', y, self.ignore, data_type, pp_type, x_raw, x_rec, with_annot=True)
 
 
 
@@ -289,12 +292,12 @@ if __name__ == "__main__":
     else:
         filepath = './results/final_results_tr_size_31700200.0005.h5'
 
-    max_iter=10
+    max_iter=500
 
     # pl = Vis(filepath, reconstruct=True, old=True)
     # pl.plot()
     v = Vis(filepath, old=False, plot_tsne=True,
-            reconstruct=True, pp_types='conv-ae', data_types='val', max_iter=max_iter)
+            reconstruct=False, pp_types='conv-ae', data_types='val', max_iter=max_iter)
     v.plot()
 
 
