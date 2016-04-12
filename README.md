@@ -7,7 +7,7 @@ Instructions for running on Cori:
 * module load python
 * module load scikit-learn
 * module load neon/1.1.0
-* python conv_ae_dayabay.py --epochs <number of epochs> --max_tsne_iter <max number of tsne iterations>
+* python conv_ae_dayabay.py --epochs [number of epochs] --max_tsne_iter [max number of tsne iterations]
 
 
 The t-SNE step is very slow at this point.
