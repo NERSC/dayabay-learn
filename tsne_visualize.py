@@ -19,6 +19,7 @@ import itertools
 import sys
 from util.helper_fxns import get_eq_classes_of
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 #self.base_path='/scratch3/scratchdirs/jialin/dayabay/'
 
 
@@ -91,9 +92,7 @@ class Vis(object):
         #plt.title(plot_name)
         #plt.colorbar(orientation="horizontal")
 
-
-        if not os.path.exists(path):
-            os.mkdir(path)
+	self._mkdir_recursive(path)
         plt.savefig(path + plot_name.replace(' ', '_') + '.jpg')
 
 
@@ -111,7 +110,13 @@ class Vis(object):
 
                 calc = False
         return calc, x
-
+    #Thanks, Mars from stackoverflow!
+    def _mkdir_recursive(self, path):
+    	sub_path = os.path.dirname(path)
+    	if not os.path.exists(sub_path):
+        	self._mkdir_recursive(sub_path)
+    	if not os.path.exists(path):
+        	os.mkdir(path)
 
     def get_pca_data(self, X, data_type, pp_type):
         calc, x_pca = self.reconstruct_data(data_type, pp_type, 'pca')
@@ -125,8 +130,10 @@ class Vis(object):
         calc, x_ts = self.reconstruct_data(data_type, pp_type, 'ts')
         if calc:
             print "calclating tsne... "
-            x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
-                                 max_iter=self.max_iter)
+            #x_ts = tsne.tsne(X.astype('float64'), self.final_dim, X.shape[1], self.perp,
+            #                   max_iter=self.max_iter)
+	    ts = TSNE(n_components=self.final_dim,perplexity=self.perp,n_iter=self.max_iter)
+	    x_ts = ts.fit_transform(X.astype('float64'))
             key = self.create_key(data_type, pp_type, 'ts')
             if key in self.h5file:
                 self.h5file.__delitem__(key)

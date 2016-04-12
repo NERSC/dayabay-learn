@@ -180,7 +180,7 @@ class ConvAe(object):
         v = Vis(self.final_h5_filename, old=False, plot_tsne=True, reconstruct=False, pp_types='conv-ae,raw', data_types=self.eval_data_type, max_iter=self.args.max_tsne_iter)
         v.plot()
 
-        pickle.dump(mlp.serialize(), open(os.path.join(self.model_files_dir, '%s-%s-%s.pkl'%(self.model_key, str(self.args.epochs), str(self.args.learn_rate))), 'w'))
+        pickle.dump(mlp.serialize(), open(os.path.join(self.model_files_dir, '%s-%s-%s.pkl'%(self.get_model_key(mlp), str(self.args.epochs), str(self.args.learn_rate))), 'w'))
 
     def main(self):
         train_set, eval_set = self.get_data()
