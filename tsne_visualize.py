@@ -251,7 +251,7 @@ class Vis(object):
                 for i,k in enumerate(d.keys()):
                     # if event == k.split('_')[0] and event == k.split('_')[1]:
                         ix, name = d[k]
-                        print x_red_ev[ix,0], x_red_ev[ix,1]
+                        #print x_red_ev[ix,0], x_red_ev[ix,1]
                         plt.annotate(name, xy= (x_red_ev[ix,0], x_red_ev[ix,1]),  xytext=(5*i,5*i),
                             textcoords = 'offset points', ha='right', va = 'bottom',
                             bbox = dict(boxstyle = 'round,pad=0.', fc = 'yellow', alpha = 0.5),
@@ -288,6 +288,7 @@ class Vis(object):
                     x_ts = self.get_tsne_data(x_pp, pp_type, data_type)
                     self._plot(x_ts,'t-SNE', y, self.ignore, data_type, pp_type, x_raw, x_rec)
                     self._plot(x_ts,'t-SNE', y, self.ignore, data_type, pp_type, x_raw, x_rec, with_annot=True)
+    
 
 
 

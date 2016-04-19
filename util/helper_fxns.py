@@ -49,6 +49,34 @@ def adjust_train_val_test_sizes(batch_size, X_train, y_train, X_val, y_val, X_te
 
 
 def save_middle_layer_output(dataset, dset, model, bneck_width):
+    arr = get_middle_layer_output(dataset,model, bneck_width)
+    dset[:] = arr[:]
+#     ix = 0
+#     for (x, t) in dataset:
+#         for l in model.layers.layers:
+#                 #forward propagate the data through the deepnet
+#                 x = l.fprop(x)
+#                 if l.name == 'middleLayer' or l.name == 'middleActivationLayer': #trying to get middle layer here
+#                     ae_x = x.asnumpyarray()
+
+#                     #ae_x is transposed from what we expect, so its of size (bneck_width, batch_size)
+#                     layer_width, batch_size = ae_x.shape
+#                     assert layer_width == bneck_width
+
+#                     #data iterator will do wrap around, so in the last batch's last several items
+#                     # will be the first several from the first batch
+#                     if ix + batch_size > dataset.ndata:
+#                         dset[ix:dataset.ndata] = ae_x.T[:dataset.ndata - ix]
+#                         # val_arr[ix:dataset.ndata, :] = ae_x.T[:dataset.ndata - ix]
+
+#                     else:
+#                         dset[ix:ix+batch_size] = ae_x.T
+#                         # val_arr[ix:ix+batch_size, :] = ae_x.T
+#                         ix += batch_size
+#                     break;
+def get_middle_layer_output(dataset,model, bneck_width):
+    # iterates through dataset and then thru network to extract the features in the middle layer
+    features = np.zeros((dataset.ndata, bneck_width))
     ix = 0
     for (x, t) in dataset:
         for l in model.layers.layers:
@@ -64,14 +92,16 @@ def save_middle_layer_output(dataset, dset, model, bneck_width):
                     #data iterator will do wrap around, so in the last batch's last several items
                     # will be the first several from the first batch
                     if ix + batch_size > dataset.ndata:
-                        dset[ix:dataset.ndata] = ae_x.T[:dataset.ndata - ix]
+                        features[ix:dataset.ndata] = ae_x.T[:dataset.ndata - ix]
                         # val_arr[ix:dataset.ndata, :] = ae_x.T[:dataset.ndata - ix]
 
                     else:
-                        dset[ix:ix+batch_size] = ae_x.T
+                        features[ix:ix+batch_size] = ae_x.T
                         # val_arr[ix:ix+batch_size, :] = ae_x.T
                         ix += batch_size
                     break;
+    return features
+    
 
 
 def get_eq_classes_of(y, points_per_class, nclass):

@@ -12,6 +12,6 @@ class HeWeightInit(Initializer):
         super(HeWeightInit, self).__init__(name=name)
 
     def fill(self, param):
-        print param.shape
+        #print param.shape
         #changing the he scale factor for spearmin
         param[:] = self.be.rng.normal(0.0, np.sqrt(2.0 / param.shape[0]), param.shape)
