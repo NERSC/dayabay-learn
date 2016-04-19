@@ -10,8 +10,7 @@ import numpy as np
 import h5py
 
 import os
-
-from tsne_source_code import tsne
+import tsne
 import pickle
 import itertools
 
