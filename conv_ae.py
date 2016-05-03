@@ -2,7 +2,8 @@ __author__ = 'racah'
 import os
 import pickle
 import sys
-from neon.data import DataIterator
+import datetime
+from neon.data import ArrayIterator
 from neon.layers import Conv, Pooling, GeneralizedCost, Deconv
 from neon.models import Model
 from neon.optimizers import GradientDescentMomentum
@@ -38,8 +39,8 @@ class ConvAe(object):
         self.setup_dirs(final_dir=self.final_dir, model_files_dir=self.model_files_dir)
         self.args = args
         self.eval_data_type = 'test' if self.args.test else 'val'
-        self.h5fin, self.final_h5_filename = create_h5_file(self.final_dir,
-                                                            self.args.epochs, self.args.learn_rate)
+        #self.h5fin, self.final_h5_filename = create_h5_file(self.final_dir,
+                                                            #self.args.epochs, self.args.learn_rate)
 
         self.train_set, self.eval_set = self._retrieve_data()
 
@@ -61,17 +62,17 @@ class ConvAe(object):
 
         self.data_dict = {'train':(X_train, y_train), 'val': (X_val, y_val),'test': (X_test, y_test)}
         
-        save_orig_data(self.h5fin, X_train, y_train, X_val, y_val, X_test, y_test)
+        #save_orig_data(self.h5fin, X_train, y_train, X_val, y_val, X_test, y_test)
         self.num_tr_examples = X_train.shape[0]
         self.data_dim = X_train.shape[1]
 
 
-        train_set = DataIterator(X_train, lshape=(1, 8, 24), make_onehot=False)
-        valid_set = DataIterator(X_val, lshape=(1, 8, 24), make_onehot=False)
+        train_set = ArrayIterator(X_train, lshape=(1, 8, 24))
+        valid_set = ArrayIterator(X_val, lshape=(1, 8, 24))
 
         if self.args.test:
-            train_set = DataIterator(np.vstack((X_train, X_val)), lshape=(1, 8, 24), make_onehot=False)
-            test_set = DataIterator(X_test, lshape=(1, 8, 24), make_onehot=False)
+            train_set = ArrayIterator(np.vstack((X_train, X_val)), lshape=(1, 8, 24), make_onehot=False)
+            test_set = ArrayIterator(X_test, lshape=(1, 8, 24), make_onehot=False)
             return train_set, test_set
         else:
             return train_set, valid_set
@@ -91,25 +92,13 @@ class ConvAe(object):
         conv = dict(strides=1, init=w_init, padding={'pad_w': 0, 'pad_h':1}, activation=Rectlin(),
                     batch_norm=False)#, batch_norm=True)
         dconv = dict(init=w_init, strides=2, padding=0, batch_norm=False)
-
-#         #change kernal size to 5x5
-#         if self.args.wrap_pad_trick: #doesn't work until newer version of neon 1.1.1 and above I think
-#             filter_size = 3
-#             def transform(X):
-#                 X = X.reshape(X.shape[0],8,24)
-#                 #pad the right with the first filter_size-1 columns from the left
-#                 X_p = np.lib.pad(X, ((0, 0), (0, 0), (0, filter_size - 1)), 'wrap')
-#                 X_p = X_p.reshape(X.shape[0],8*26)
-#                 return X_p
-#             layers = [DataTransform(transform=transform),Conv((3, 3, 16), **conv)] #8,26,2 -> 8,24,]
-#         else:
         layers = [Conv((5, 5, 16), strides=1, init=w_init, padding=2, activation=Rectlin(), batch_norm=False)] #8,24,1-> 8,24,
 
         layers.extend([
                   Pooling((2, 2), strides=2),# -> 4,12,
                   Conv((3, 3, 16), **conv), # -> 4,10,
                   Pooling((2, 2), strides=2), #-> 2,5
-                  Conv((2, 5, self.args.bneck_width), init=w_init, strides=1, padding=0, activation=Rectlin(),batch_norm=False, act_name="middleLayer"),#-> 1,1,10 like an FC layer
+                  Conv((2, 5, self.args.bneck_width), init=w_init, strides=1, padding=0, activation=Rectlin(name="middleLayer"),batch_norm=False),#-> 1,1,10 like an FC layer
                   Deconv((2, 4, 16), **dconv), #-> 2,4,
                   Deconv((2, 5, 16), init=w_init, strides=2, padding=0, batch_norm=False), #-> 4,11
                   Deconv((2, 4, 1), **dconv)] )#->8,24,
@@ -122,50 +111,26 @@ class ConvAe(object):
 
     def get_model_key(self, mlp):
         '''For naming of files. Should be changed'''
-        model_key = '{0}-{1}-{2}-{3}-{4}'.format(self.data_dim,'-'.join([(l.name[0] if 'Bias' not in l.name and 'Activation' not in l.name else '') +
-        ('-' + '_'.join(str(l.fshape).split(' '))
-        if 'Pooling' in l.name or 'Conv' in l.name or 'conv' in l.name else '')
-                                                              for l in mlp.layers.layers]),
-                                      str(self.args.epochs),
-                                      str(self.num_tr_examples),
-                                      str(self.data_dim))
+        model_key = 'conv' + str(datetime.date.today())
         return model_key
+
+    def add_callbacks(self,mlp, eval_set):
+        callbacks = Callbacks(mlp, eval_set=eval_set, **self.args.callback_args) # eval_set=eval_set the two callbacks below do this
+
+        return callbacks
+        
 
     def setup_results(self, mlp, train_set, eval_set):
         model_key = self.get_model_key(mlp)
         self.args.save_path = self.model_files_dir + '/' + model_key + '.pkl'
 
-
-
-
-        callbacks = Callbacks(mlp, train_set, self.args) # eval_set=eval_set the two callbacks below do this
-#         callbacks.add_save_best_state_callback(self.model_files_dir)
-
-#         callbacks.add_callback(LossCallback(( self.h5fin.get('train_loss', False) if 'train_loss' in self.h5fin else self.h5fin.create_group('train_loss')),
-#                                             mlp, eval_set=train_set, epoch_freq=self.args.eval_freq))
-#         if not self.args.test:
-#             callbacks.add_callback(LossCallback(( self.h5fin.get('valid_loss', False) if 'valid_loss' in self.h5fin else self.h5fin.create_group('valid_loss')),
-#                                                 mlp, eval_set=eval_set, epoch_freq=self.args.eval_freq))
-#             #callbacks.add_early_stop_callback(stop_func)
-#         else:
-#             callbacks.add_callback(LossCallback(( self.h5fin.get('test_loss', False) if 'test_loss' in self.h5fin else self.h5fin.create_group('valid_loss')),
-#                                                 mlp, eval_set=eval_set, epoch_freq=self.args.eval_freq))
-
-        return callbacks
+        return self.add_callbacks(mlp,eval_set)
 
 
 
 
     def evaluate(self,mlp, eval_set):
         pass
-
-
-#         h5ae_eval = self.h5fin.create_dataset('conv-ae/%s/x' % (self.eval_data_type),
-#                                               (eval_set.ndata,
-#                                                self.args.bneck_width)) if  'conv-ae/%s/x'%(self.eval_data_type) not in self.h5fin else self.h5fin['conv-ae/%s/x' %(self.eval_data_type)]
-#         save_middle_layer_output(eval_set, h5ae_eval, mlp, self.args.bneck_width)
-#         reconstructed_eval = mlp.get_outputs(eval_set)
-#         self.h5fin.create_dataset('conv-ae/%s/x_reconstructed'%(self.eval_data_type), data=reconstructed_eval)
 
     def get_reconstructed(self):
         reconstructed_eval = self.mlp.get_outputs(self.eval_set)

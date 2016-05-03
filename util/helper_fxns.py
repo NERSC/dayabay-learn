@@ -82,7 +82,8 @@ def get_middle_layer_output(dataset,model, bneck_width):
         for l in model.layers.layers:
                 #forward propagate the data through the deepnet
                 x = l.fprop(x)
-                if l.name == 'middleLayer' or l.name == 'middleActivationLayer': #trying to get middle layer here
+                if l.name == 'middleLayer': #trying to get middle layer here
+                    print ae_x
                     ae_x = x.asnumpyarray()
 
                     #ae_x is transposed from what we expect, so its of size (bneck_width, batch_size)
