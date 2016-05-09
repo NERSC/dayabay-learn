@@ -1,4 +1,5 @@
-__author__ = 'racah'
+import sys
+import numpy as np
 import os
 import pickle
 import sys
@@ -12,9 +13,13 @@ from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from conv_ae import ConvAe
 from vis.viz import Viz
+from util.helper_fxns import adjust_train_val_test_sizes
 
 
+from util.data_loaders import load_dayabay_conv
 
+
+# In[9]:
 
 # 1) Primary AD           10000 or 1
 # 2) Delayed AD response  01000 or 2
@@ -23,7 +28,7 @@ from vis.viz import Viz
 # 5) Other (background noise) 00001 or 5
 
 
-
+# In[10]:
 
 def setup_parser():
         # parse the command line arguments
@@ -32,12 +37,10 @@ def setup_parser():
         parser.add_argument('--h5file')
         parser.add_argument('--test')
         parser.add_argument('--learn_rate')
-        parser.add_argument('--wrap_pad_trick')
-        parser.add_argument('--cylinder_local_trick')
         parser.add_argument('--bneck_width')
         parser.add_argument('--max_tsne_iter')
         parser.set_defaults(batch_size=128,h5file='/global/homes/p/pjsadows/data/dayabay/single/single_20000.h5',
-                    serialize=2, epochs=100, learn_rate=0.0001, model_file=False,eval_freq=1, test=False, save_path='./results/model_files/conv-ae',
+                    serialize=2, epochs=100, learn_rate=0.0001, model_file=False,eval_freq=1, test=False, save_path='./results/model_files/conv-ae2',
                     wrap_pad_trick=False, cylinder_local_trick=False, bneck_width=10, max_tsne_iter=500)
 
         args = parser.parse_args()
@@ -46,25 +49,61 @@ def setup_parser():
         return args
 
 
+# In[11]:
 
 if __name__ == "__main__":
-    #sys.argv = sys.argv[5:] # only for iPython to skip all the ipython command line arguments
+
     args = setup_parser()
-    #args.epochs = 1
-    
+
+
+    # In[12]:
+
+    (X_train, y_train), (X_val,y_val), (X_test, y_test), nclass = load_dayabay_conv(path=args.h5file,
+                                                clev_preproc=False, seed=6, eq_class=True, get_y=True )
+
+    X_train, y_train, X_val, y_val,X_test, y_test = adjust_train_val_test_sizes(args.batch_size, X_train,
+                                                 y_train, X_val, y_val, X_test, y_test)
+    X_train = X_train.reshape(X_train.shape[0],1,8,24)
+    X_val = X_val.reshape(X_val.shape[0],1,8,24)
+
+
+    # In[14]:
+
+    args.epochs = 1
     cae = ConvAe(args)
-    cae.train()
-    
-    feat = cae.extract_features()
-    x_orig, y_val = cae.get_data('val')
+    cae.fit(X_train)
+
+
+    # In[15]:
+
+    feat = cae.extract(X_val)
     gr_truth = np.argmax(y_val,axis =1) #convert from one-hot to normal
-    
+
+
+    # In[16]:
+
+    #get_ipython().magic('matplotlib inline')
     v = Viz(gr_truth)
-    
+
+
+    # In[17]:
+
     x_pc = v.get_pca(feat)
-    #x_ts = v.get_tsne(feat,n_iter=args.max_tsne_iter)
+
+
+    # In[18]:
+
     v.plot_features(x_pc,save=True)
-    x_rec = cae.get_reconstructed()
-    #x_orig, _ = cae.get_data('val')
+
+
+    # In[19]:
+
+    x_rec = cae.predict(X_val)
+    x_orig = X_val.reshape(X_val.shape[0], 192)
     v.plot_reconstruction(x_orig[2], x_rec[2], indx=10, save=True)
+
+
+# In[ ]:
+
+
 
