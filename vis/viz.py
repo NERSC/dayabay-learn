@@ -31,6 +31,8 @@ class Viz(object):
 
         
     def save(self, name='untitled_plot',savedir='./results/plots'):
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
         save_path = os.path.join(savedir,name + '.jpg')
         print save_path
         plt.savefig(save_path)
