@@ -38,6 +38,7 @@ def split_train_test(X,y,nclass, test_prop, seed, eq_class=True):
         y_train = np.vstack(tuple([y_cl[i_cl[:num_tr_per_class]] for y_cl in y_eq_cl]))
         X_test = np.vstack(tuple([x_cl[i_cl[num_tr_per_class:]] for x_cl in X_eq_cl]))
         y_test = np.vstack(tuple([y_cl[i_cl[num_tr_per_class:]] for y_cl in y_eq_cl]))
+        
     else:
         num_ex = X.shape[0]
         i = np.arange(X.shape[0])
@@ -66,14 +67,18 @@ def split_train_val(X_train, y_train, seed, val_prop, num_tr):
 
 
 
-def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, test_prop=0.2, validation=True, val_prop=0.2, seed=3, get_y=True, eq_class=True):
+def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, test_prop=0.2, validation=True, val_prop=0.2, seed=3, get_y=True, eq_class=True, tr_size=None):
     nclass=5
     h5_dataset = h5py.File(path)
-    X = np.asarray(h5_dataset['inputs'][:,:192]).astype('float64')
+    if not tr_size:
+        tr_size = h5_dataset['inputs'].shape[0]
+        
+    X = np.asarray(h5_dataset['inputs'][:tr_size,:192]).astype('float64')
     if get_y:
-        y = np.asarray(h5_dataset['targets']).astype('float64')
+        y = np.asarray(h5_dataset['label_one_hot'][:tr_size, :]).astype('float64')
     else:
         y = np.ones((X.shape[0],5))
+
 
     # X -= np.mean(X)
     # X /= np.std(X)
@@ -93,8 +98,9 @@ def load_dayabay_conv(path,clev_preproc=False,filter_size=3, just_test=False, te
         X_t = X
 
 
+
     if not just_test:
-        X_train, y_train, X_test, y_test, num_tr = split_train_test(X_t,y,nclass, test_prop, seed,eq_class)
+        X_train, y_train, X_test, y_test, num_tr = split_train_test(X_t, y, nclass, test_prop, seed,eq_class)
 
 
 
