@@ -9,7 +9,7 @@ uses a convolutional autoencoder to extract 10-dimensional features from each ex
 
 * module load python
 * module load scikit-learn
-* module load neon/1.1.0
+* module load neon
 * python conv_ae_dayabay.py --epochs [number of epochs] 
 
 ## From an iPython notebook:
