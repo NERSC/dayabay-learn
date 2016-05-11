@@ -15,6 +15,7 @@ from sklearn.decomposition import PCA
 from conv_ae import ConvAe
 from vis.viz import Viz
 from util.helper_fxns import adjust_train_val_test_sizes
+from util.data_loaders import load_dayabay_conv
 
 
 from util.data_loaders import load_dayabay_conv
@@ -48,7 +49,6 @@ def setup_parser():
         
         #how many iterations of tsne
         parser.add_argument('--max_tsne_iter')
-        
         parser.set_defaults(batch_size=128,
                             h5file='/project/projectdirs/dasrepo/single_20000.h5',
                             
@@ -92,13 +92,14 @@ if __name__ == "__main__":
     #sys.argv = sys.argv[5:] # only for iPython to skip all the ipython command line arguments
     args = setup_parser()
     #load data from hdf5, preprocess and split into train and test
-    (X_train, y_train), (X_val,y_val), (X_test, y_test), nclass = load_dayabay_conv(path=args.h5file, batch_size=args.batch_size)
+    (X_train, y_train), (X_val,y_val), (X_test, y_test), nclass = load_dayabay_conv(path=args.h5file,
+                                                                        batch_size=args.batch_size)
 
-    # X_train = X_train[y_train != 4.0]
-    # y_train = y_train[y_train != 4.0]
+    X_train, y_train, X_val, y_val,X_test, y_test = adjust_train_val_test_sizes(args.batch_size, X_train,
+                                                 y_train, X_val, y_val, X_test, y_test)
+    X_train = X_train.reshape(X_train.shape[0],1,8,24)
+    X_val = X_val.reshape(X_val.shape[0],1,8,24)
 
-
-    # In[122]:
 
     args.epochs = 1
 
@@ -108,39 +109,19 @@ if __name__ == "__main__":
     #uses scikit-learn interface (so this trains on X_train)
     cae.fit(X_train)
 
-
-    # In[105]:
-
     #extract the hidden layer outputs when running x_val thru autoencoder
     feat = cae.extract(X_val)
-
-
-    # In[84]:
+    gr_truth = y_val#np.argmax(y_val,axis =1) #convert from one-hot to normal
 
     gr_truth = y_val #convert from one-hot to normal
-
-
-    # In[106]:
-
-    #get_ipython().magic('matplotlib inline')
-
     v = Viz(gr_truth)
-
-
-    # In[107]:
 
     # take first two principal components of features, so we can plot easily
     #normally we would do t-SNE (but takes too long for quick demo)
     x_pc = v.get_pca(feat)
 
-
-    # In[108]:
-
     #plot the 2D-projection of the features
     v.plot_features(x_pc,save=True)
-
-
-    # In[88]:
 
     #get reconstruction of X_val from autoencoder
     x_rec = cae.predict(X_val)
@@ -150,8 +131,4 @@ if __name__ == "__main__":
 
     #plot reconstruction
     v.plot_reconstruction(x_orig[2], x_rec[2], indx=10, save=True)
-
-
-
-
 
