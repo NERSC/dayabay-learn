@@ -95,14 +95,6 @@ if __name__ == "__main__":
     (X_train, y_train), (X_val,y_val), (X_test, y_test), nclass = load_dayabay_conv(path=args.h5file,
                                                                         batch_size=args.batch_size)
 
-    X_train, y_train, X_val, y_val,X_test, y_test = adjust_train_val_test_sizes(args.batch_size, X_train,
-                                                 y_train, X_val, y_val, X_test, y_test)
-    X_train = X_train.reshape(X_train.shape[0],1,8,24)
-    X_val = X_val.reshape(X_val.shape[0],1,8,24)
-
-
-    args.epochs = 1
-
     #class for networks architectur
     cae = ConvAe(args)
 
