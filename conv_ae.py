@@ -86,4 +86,6 @@ class ConvAe(object):
     def fit(self, data):
         train_set = self.preprocess_data(data)
         print "Training with %d training example" % (train_set.ndata)
-        self.model.fit(train_set,  optimizer=self.opt_gdm, num_epochs=self.args.epochs, cost=self.cost, callbacks=Callbacks(self.model))
+        self.model.fit(train_set,  optimizer=self.opt_gdm,
+        num_epochs=self.args.epochs, cost=self.cost,
+            callbacks=Callbacks(self.model, eval_set=train_set, **self.args.callback_args))
