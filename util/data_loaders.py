@@ -1,6 +1,6 @@
 # Evan Racah
 import h5py
-#from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler
 import numpy as np
 import pickle
 import glob
@@ -82,13 +82,16 @@ def mean_subtract_unit_var(X):
     X /= np.std(X)
     return X
     
-def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25):
+def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, preprocess=True):
     '''Load up the hdf5 file given into a set of numpy arrays suitable for
     convnets.
 
     The output is a tuple of (train, valid, test). Each set has shape
     (n_pairs, nchannels, xsize, ysize) where
         (nchannels, xsize, ysize) = (4, 8, 24).
+
+    Preprocessing causes the charges and times to (separately) be scaled to
+    have a mean of 0 and standard deviation of approximately 1.
 
     The relative size of each set can be specified in the arguments.'''
     h5file = h5py.File(path, 'r')
@@ -102,6 +105,11 @@ def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25):
     valid = np.asarray(h5set[ntrain:(ntrain + nvalid)])
     test = np.asarray(h5set[(ntrain + nvalid):])
 
+    if preprocess:
+        train, scaler = preprocess_data(train)
+        valid, _ = preprocess_data(valid, scaler)
+        test, _ = preprocess_data(test, scaler)
+
     imageshape = (4, 8, 24)
     nfeatures = reduce(mul, imageshape)
     # Don't use all of the array since it contains the metadata as well as the
@@ -111,6 +119,20 @@ def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25):
     test = test[:, :nfeatures].reshape(ntest, *imageshape)
 
     return (train, valid, test)
+
+def preprocess_data(data, transformer=None):
+    '''Scale each feature independently to have unit norm and 0 mean over the
+    entire data set.
+    
+    Returns the preprocessed data set as well as the transformer object used to
+    do the preprocessing.
+
+    If a transformer is provided, use it to preprocess the data. Else create a
+    new transformer trained on the given data. The current implementation uses
+    the scikit-learn StandardScaler.'''
+    if transformer is None:
+        transformer = StandardScaler().fit(data)
+    return transformer.transform(data), transformer
 
 
 def load_dayabay_conv(path,geom_preproc=False,filter_size=3, just_test=False, test_prop=0.2, validation=True, val_prop=0.2, seed=3, get_y=True, eq_class=True, tr_size=None, batch_size=None):
