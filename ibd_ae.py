@@ -15,7 +15,7 @@ from sklearn.decomposition import PCA
 from conv_ae import ConvAe
 from vis.viz import Viz
 from util.helper_fxns import adjust_train_val_test_sizes
-from util.data_loaders import load_dayabay_conv
+from util.data_loaders import load_ibd_pairs
 
 
 from util.data_loaders import load_dayabay_conv
@@ -92,28 +92,22 @@ if __name__ == "__main__":
     #sys.argv = sys.argv[5:] # only for iPython to skip all the ipython command line arguments
     args = setup_parser()
     #load data from hdf5, preprocess and split into train and test
-    (X_train, y_train), (X_val,y_val), (X_test, y_test), nclass = load_dayabay_conv(path=args.h5file,
-                                                                        batch_size=args.batch_size)
+    preprocess = True
+    train, val, test = load_ibd_pairs(args.h5file, preprocess=preprocess)
 
-    X_train, y_train, X_val, y_val,X_test, y_test = adjust_train_val_test_sizes(args.batch_size, X_train,
-                                                 y_train, X_val, y_val, X_test, y_test)
-    X_train = X_train.reshape(X_train.shape[0],1,8,24)
-    X_val = X_val.reshape(X_val.shape[0],1,8,24)
+    train, _, val, _, test, _  = adjust_train_val_test_sizes(args.batch_size,
+        train, train, val, val, test, test)
 
-
-    #args.epochs = 1
-
-    #class for networks architectur
-    cae = ConvAe(args)
+    #class for networks architecture
+    cae = ConvAe(4, args)
 
     #uses scikit-learn interface (so this trains on X_train)
-    cae.fit(X_train)
+    cae.fit(train)
 
     #extract the hidden layer outputs when running x_val thru autoencoder
-    feat = cae.extract(X_val)
-    gr_truth = y_val#np.argmax(y_val,axis =1) #convert from one-hot to normal
+    feat = cae.extract(val)
+    gr_truth = np.ones(val.shape[0])
 
-    gr_truth = y_val #convert from one-hot to normal
     v = Viz(gr_truth)
 
     # take first two principal components of features, so we can plot easily
@@ -122,13 +116,4 @@ if __name__ == "__main__":
 
     #plot the 2D-projection of the features
     v.plot_features(x_pc,save=True)
-
-    #get reconstruction of X_val from autoencoder
-    x_rec = cae.predict(X_val)
-
-    #fromat X_val
-    x_orig = X_val.reshape(X_val.shape[0], 192)
-
-    #plot reconstruction
-    v.plot_reconstruction(x_orig[2], x_rec[2], indx=10, save=True)
 
