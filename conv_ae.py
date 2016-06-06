@@ -18,8 +18,9 @@ from neon.backends import gen_backend
 # 5) Other (background noise) 00001 or 5
 
 class ConvAe(object):
-    def __init__(self, args):
+    def __init__(self, nchannels, args):
         self.args = args
+        self.nchannels = nchannels
         self.model,self.cost, self.opt_gdm = self.setup_network()
 
 
@@ -42,7 +43,7 @@ class ConvAe(object):
                   Conv((2, 5, self.args.bneck_width),name='bottleneck', init=w_init, strides=1, padding=0, activation=Rectlin(),batch_norm=False),#-> 1,1,10 like an FC layer
                   Deconv((2, 4, 16), **dconv), #-> 2,4,
                   Deconv((2, 5, 16), init=w_init, strides=2, padding=0, batch_norm=False), #-> 4,11
-                  Deconv((2, 4, 1), **dconv)] )#->8,24,
+                  Deconv((2, 4, self.nchannels), **dconv)] )#->8,24,
 
 
         cost = GeneralizedCost(costfunc=SumSquared())
