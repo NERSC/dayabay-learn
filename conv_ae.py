@@ -1,3 +1,4 @@
+import Network.AbstractNetwork as AbstractNetwork
 from neon.data import ArrayIterator
 from neon.layers import Conv, Pooling, GeneralizedCost, Deconv
 from neon.models import Model
@@ -17,14 +18,13 @@ from neon.backends import gen_backend
 # 4) Flasher              00010 or 4
 # 5) Other (background noise) 00001 or 5
 
-class ConvAe(object):
+class ConvAe(AbstractNetwork):
     def __init__(self, args, nchannels=1):
         self.args = args
         self.nchannels = nchannels
         self.model,self.cost, self.opt_gdm = self.setup_network()
-
-
-
+        self.network = self.model
+        self.optimizer = self.opt_gdm
 
     def setup_network(self):
         w_init = HeWeightInit()
