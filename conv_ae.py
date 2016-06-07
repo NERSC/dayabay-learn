@@ -18,7 +18,7 @@ from neon.backends import gen_backend
 # 5) Other (background noise) 00001 or 5
 
 class ConvAe(object):
-    def __init__(self, nchannels, args):
+    def __init__(self, args, nchannels=1):
         self.args = args
         self.nchannels = nchannels
         self.model,self.cost, self.opt_gdm = self.setup_network()

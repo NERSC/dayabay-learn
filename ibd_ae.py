@@ -99,7 +99,7 @@ if __name__ == "__main__":
         train, train, val, val, test, test)
 
     #class for networks architecture
-    cae = ConvAe(4, args)
+    cae = ConvAe(args, nchannels=4)
 
     #uses scikit-learn interface (so this trains on X_train)
     cae.fit(train)
