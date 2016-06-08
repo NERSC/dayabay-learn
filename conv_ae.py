@@ -1,4 +1,4 @@
-import Network.AbstractNetwork as AbstractNetwork
+from Network import AbstractNetwork
 from neon.data import ArrayIterator
 from neon.layers import Conv, Pooling, GeneralizedCost, Deconv
 from neon.models import Model
