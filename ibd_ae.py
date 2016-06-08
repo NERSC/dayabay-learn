@@ -31,7 +31,7 @@ import logging
 if __name__ == "__main__":
 
     #class for networks architecture
-    cae = IBDPairConvAe()
+    cae = IBDPairConvAe(epochs=10)
     
     h5file = "../dayabay-data-conversion/extract_ibd/ibd_yasu_0_9999.h5"
     #load data from hdf5, preprocess and split into train and test

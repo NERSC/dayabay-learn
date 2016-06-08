@@ -12,16 +12,17 @@ from Network import AbstractNetwork
 class IBDPairConvAe(AbstractNetwork):
     '''A convolutional autoencoder for interpreting candidate IBD pairs.'''
 
-    def __init__(self):
+    def __init__(self, minibatch_size=128, epochs=1, learn_rate=1e-3,
+            bottleneck_width=10):
         '''Initialize a ready-to-train convolutional autoencoder.'''
         super(IBDPairConvAe, self).__init__(self)
         # Shapes are given as (batch, depth, height, width)
-        self.minibatch_shape = (128, 4, 8, 24)
-        self.minibatch_size = self.minibatch_shape[0]
+        self.minibatch_shape = (minibatch_size, 4, 8, 24)
+        self.minibatch_size = minibatch_size
         self.image_shape = self.minibatch_shape[1:-1]
-        self.epochs = 1
-        self.learn_rate = 0.0001
-        self.bottleneck_width = 10
+        self.epochs = epochs
+        self.learn_rate = learn_rate
+        self.bottleneck_width = bottleneck_width
         self.input_var = T.dtensor4('input')
         self.network = self._setup_network()
         self.train_prediction = self._setup_prediction(deterministic=False)
