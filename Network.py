@@ -10,7 +10,8 @@ class AbstractNetwork(object):
     '''
     def __init__(self, *args, **kwargs):
         self.network = None
-        self.cost = None
+        self.train_cost = None
+        self.test_cost = None
         self.optimizer = None
 
     def fit(self, x_train, y_train):
@@ -22,5 +23,5 @@ class AbstractNetwork(object):
     def extract_layer(self, data, layer):
         raise NotImplemented()
 
-    def preprocess_data(self, x, y):
+    def minibatch_iterator(self, x, y):
         raise NotImplemented()
