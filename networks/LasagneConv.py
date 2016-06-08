@@ -161,3 +161,14 @@ class IBDPairConvAe(AbstractNetwork):
         if y is not None:
             raise ValueError("We don't need labels here")
         return self.predict_fn(x)
+
+    def extract_layer(self, data, layer):
+        '''Extract the output of the given layer.'''
+        all_layers = l.layers.get_all_layers(self.network)
+        # find the layer named with the value of layer
+        for one_layer in all_layers:
+            if one_layer.name == layer:
+                output = l.layers.get_output(one_layer)
+                out_fn = theano.function([self.input_var], output)
+                return out_fn(data)
+        raise ValueError('"%s" is not a layer in our network' % layer)
