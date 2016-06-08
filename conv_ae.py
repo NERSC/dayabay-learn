@@ -1,3 +1,4 @@
+import Network.AbstractNetwork as AbstractNetwork
 from neon.data import ArrayIterator
 from neon.layers import Conv, Pooling, GeneralizedCost, Deconv
 from neon.models import Model
@@ -17,13 +18,13 @@ from neon.backends import gen_backend
 # 4) Flasher              00010 or 4
 # 5) Other (background noise) 00001 or 5
 
-class ConvAe(object):
-    def __init__(self, args):
+class ConvAe(AbstractNetwork):
+    def __init__(self, args, nchannels=1):
         self.args = args
+        self.nchannels = nchannels
         self.model,self.cost, self.opt_gdm = self.setup_network()
-
-
-
+        self.network = self.model
+        self.optimizer = self.opt_gdm
 
     def setup_network(self):
         w_init = HeWeightInit()
@@ -42,7 +43,7 @@ class ConvAe(object):
                   Conv((2, 5, self.args.bneck_width),name='bottleneck', init=w_init, strides=1, padding=0, activation=Rectlin(),batch_norm=False),#-> 1,1,10 like an FC layer
                   Deconv((2, 4, 16), **dconv), #-> 2,4,
                   Deconv((2, 5, 16), init=w_init, strides=2, padding=0, batch_norm=False), #-> 4,11
-                  Deconv((2, 4, 1), **dconv)] )#->8,24,
+                  Deconv((2, 4, self.nchannels), **dconv)] )#->8,24,
 
 
         cost = GeneralizedCost(costfunc=SumSquared())
@@ -86,4 +87,6 @@ class ConvAe(object):
     def fit(self, data):
         train_set = self.preprocess_data(data)
         print "Training with %d training example" % (train_set.ndata)
-        self.model.fit(train_set,  optimizer=self.opt_gdm, num_epochs=self.args.epochs, cost=self.cost, callbacks=Callbacks(self.model))
+        self.model.fit(train_set,  optimizer=self.opt_gdm,
+        num_epochs=self.args.epochs, cost=self.cost,
+            callbacks=Callbacks(self.model, eval_set=train_set, **self.args.callback_args))
