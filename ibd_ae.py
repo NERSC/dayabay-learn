@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from vis.viz import Viz
 from util.helper_fxns import adjust_train_val_test_sizes
+from util.helper_fxns import center, scale
 from util.data_loaders import load_ibd_pairs
 from util.data_loaders import load_dayabay_conv
 from LasagneConv import IBDPairConvAe
@@ -35,8 +36,14 @@ if __name__ == "__main__":
     
     h5file = "../dayabay-data-conversion/extract_ibd/ibd_yasu_0_9999.h5"
     #load data from hdf5, preprocess and split into train and test
-    preprocess = True
-    train, val, test = load_ibd_pairs(h5file, preprocess=preprocess)
+    train, val, test = load_ibd_pairs(h5file)
+
+    center(train)
+    center(val)
+    center(test)
+    scale(train, 1)
+    scale(val, 1)
+    scale(test, 1)
 
     train, _, val, _, test, _  = adjust_train_val_test_sizes(cae.minibatch_size,
         train, train, val, val, test, test)
