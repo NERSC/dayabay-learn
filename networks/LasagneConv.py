@@ -4,6 +4,7 @@ import numpy as np
 import theano
 import theano.tensor as T
 import lasagne as l
+from operator import mul
 import logging
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -20,6 +21,7 @@ class IBDPairConvAe(AbstractNetwork):
         self.minibatch_shape = (minibatch_size, 4, 8, 24)
         self.minibatch_size = minibatch_size
         self.image_shape = self.minibatch_shape[1:-1]
+        self.num_features = reduce(mul, self.image_shape)
         self.epochs = epochs
         self.learn_rate = learn_rate
         self.bottleneck_width = bottleneck_width
@@ -37,7 +39,7 @@ class IBDPairConvAe(AbstractNetwork):
 
     def _setup_network(self):
         '''Construct the ConvAe architecture for Daya Bay IBDs.'''
-        initial_weights = l.init.Normal(1, 0)
+        initial_weights = l.init.Normal(1.0/self.num_features, 0)
         # Input layer shape = (minibatch_size, 4, 8, 24)
         network = l.layers.InputLayer(
             input_var=self.input_var,
