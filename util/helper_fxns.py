@@ -6,6 +6,36 @@ import os
 import h5py
 from collections import deque
 
+def center(data, in_place=True):
+    '''Subtract the mean over all samples and pixels, independent by channel.
+
+    If in_place, update the given data array and return the array of means.
+    Else, return (array of means, new array).
+
+    Expects data of the form [batch, channel, height, width].'''
+    means = data.mean(axis=(0, 2, 3), keepdims=True)
+    if in_place:
+        data -= means
+        return means.flatten()
+    else:
+        result = data - means
+        return means.flatten(), result
+
+def scale(data, std, in_place=True):
+    '''Scale the data to the given std over all samples and pixels, independent
+    by channel.
+
+    If in_place, update the given data array and return the array of stds.
+    Else, return (array of stds, new array).
+
+    Expects data of the form [batch, channel, height, width].'''
+    stds = data.std(axis=(0, 2, 3), keepdims=True)
+    if in_place:
+        data /= stds/std
+        return stds.flatten()
+    else:
+        result = data * (std / stds)
+        return stds.flatten(), result
 
 def save_orig_data(h5fin,X_train, y_train, X_val,y_val, X_test, y_test):
     h5fin.create_dataset('raw/train/x', data=X_train)

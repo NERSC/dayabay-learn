@@ -82,16 +82,13 @@ def mean_subtract_unit_var(X):
     X /= np.std(X)
     return X
     
-def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, preprocess=True):
+def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25):
     '''Load up the hdf5 file given into a set of numpy arrays suitable for
     convnets.
 
     The output is a tuple of (train, valid, test). Each set has shape
     (n_pairs, nchannels, xsize, ysize) where
         (nchannels, xsize, ysize) = (4, 8, 24).
-
-    Preprocessing causes the charges and times to (separately) be scaled to
-    have a mean of 0 and standard deviation of approximately 1.
 
     The relative size of each set can be specified in the arguments.'''
     h5file = h5py.File(path, 'r')
@@ -104,11 +101,6 @@ def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, preprocess=True):
     train = np.asarray(h5set[:ntrain])
     valid = np.asarray(h5set[ntrain:(ntrain + nvalid)])
     test = np.asarray(h5set[(ntrain + nvalid):])
-
-    if preprocess:
-        train, scaler = preprocess_data(train)
-        valid, _ = preprocess_data(valid, scaler)
-        test, _ = preprocess_data(test, scaler)
 
     imageshape = (4, 8, 24)
     nfeatures = reduce(mul, imageshape)
