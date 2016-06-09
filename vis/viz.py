@@ -1,7 +1,6 @@
 import os
 import pickle
 import sys
-from neon.util.argparser import NeonArgparser
 import h5py
 import matplotlib
 from sklearn.manifold import TSNE
@@ -9,7 +8,6 @@ import numpy as np
 matplotlib.use('agg')
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
-from conv_ae import ConvAe
 
 class Viz(object):
     def __init__(self, gr_truth=None, nclass=5):
