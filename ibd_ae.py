@@ -34,9 +34,16 @@ if __name__ == "__main__":
     #class for networks architecture
     cae = IBDPairConvAe(epochs=10)
     
-    h5file = "../dayabay-data-conversion/extract_ibd/ibd_yasu_0_9999.h5"
     #load data from hdf5, preprocess and split into train and test
-    train, val, test = load_ibd_pairs(h5file)
+    train = np.zeros((20000, 4, 8, 24))
+    val = np.zeros((10000, 4, 8, 24))
+    test = np.zeros((10000, 4, 8, 24))
+    h5files = []
+    for i in range(4):
+        name = "../dayabay-data-conversion/extract_ibd/ibd_yasu_%d_%d.h5"
+        h5file = name % (i*10000, (i+1)*10000-1)
+        (train[i*5000:(i+1)*5000], val[i*2500:(i+1)*2500],
+            test[i*2500:(i+1)*2500]) = load_ibd_pairs(h5file)
 
     center(train)
     center(val)
