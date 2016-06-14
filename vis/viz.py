@@ -8,7 +8,6 @@ import numpy as np
 matplotlib.use('agg')
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
-
 class Viz(object):
     def __init__(self, gr_truth=None, nclass=5):
         self.nclass = nclass
@@ -31,7 +30,7 @@ class Viz(object):
     def save(self, name='untitled_plot',savedir='./results/plots'):
         if not os.path.exists(savedir):
             os.makedirs(savedir)
-        save_path = os.path.join(savedir,name + '.jpg')
+        save_path = os.path.join(savedir,name + '.png')
         print save_path
         plt.savefig(save_path)
     
