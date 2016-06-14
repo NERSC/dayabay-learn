@@ -15,7 +15,7 @@ from util.helper_fxns import adjust_train_val_test_sizes
 from util.helper_fxns import center, scale
 from util.data_loaders import load_ibd_pairs
 from util.data_loaders import load_dayabay_conv
-from LasagneConv import IBDPairConvAe
+from networks.LasagneConv import IBDPairConvAe
 import logging
 
 
@@ -31,8 +31,9 @@ import logging
 
 if __name__ == "__main__":
 
+    epochs = int(sys.argv[1]) if len(sys.argv) > 1 else 10
     #class for networks architecture
-    cae = IBDPairConvAe(epochs=10)
+    cae = IBDPairConvAe(epochs=epochs)
     
     #load data from hdf5, preprocess and split into train and test
     train = np.zeros((20000, 4, 8, 24))
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     test = np.zeros((10000, 4, 8, 24))
     h5files = []
     for i in range(4):
-        name = "../dayabay-data-conversion/extract_ibd/ibd_yasu_%d_%d.h5"
+        name = "/global/homes/s/skohn/ml/dayabay-data-conversion/extract_ibd/ibd_yasu_%d_%d.h5"
         h5file = name % (i*10000, (i+1)*10000-1)
         (train[i*5000:(i+1)*5000], val[i*2500:(i+1)*2500],
             test[i*2500:(i+1)*2500]) = load_ibd_pairs(h5file)
