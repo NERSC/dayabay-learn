@@ -68,7 +68,7 @@ class IBDPairConvAe(AbstractNetwork):
         network = l.layers.MaxPool2DLayer(
             network,
             pool_size=(2, 2))
-        # post-conv shape = (minibatch_size, 10, 1, 1)
+        # post-conv shape = (minibatch_size, bottleneck_width, 1, 1)
         network = l.layers.Conv2DLayer(
             network,
             name='bottleneck',
