@@ -13,6 +13,7 @@ from sklearn.decomposition import PCA
 from vis.viz import Viz
 from util.data_loaders import load_ibd_pairs, get_ibd_data
 from networks.LasagneConv import IBDPairConvAe
+import argparse
 import logging
 
 
@@ -26,12 +27,21 @@ import logging
 
 # In[118]:
 
-if __name__ == "__main__":
+def setup_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-e', '--epochs', type=int, default=10,
+        help='number of epochs for training')
+    parser.add_argument('-w', '--bottleneck-width', type=int, default=10,
+        help='number of features in the bottleneck layer')
+    return parser
 
-    epochs = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+if __name__ == "__main__":
+    parser = setup_parser()
+    args = parser.parse_args()
+
     #class for networks architecture
-    cae = IBDPairConvAe(epochs=epochs)
-    
+    cae = IBDPairConvAe(bottleneck_width=args.bottleneck_width,
+        epochs=args.epochs)
     train, val, test = get_ibd_data(tot_num_pairs=10000)
 
     #uses scikit-learn interface (so this trains on X_train)
