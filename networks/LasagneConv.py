@@ -129,23 +129,28 @@ class IBDPairConvAe(AbstractNetwork):
             momentum=0.9)
         return updates
 
+
     def minibatch_iterator(self, x, y=None):
         '''Return a generator that goes through the set in mini-batches.
         '''
         if y is not None:
             raise ValueError("We don't need labels here")
-        # Enforce that the data set is an integer multiple of the mini-batch
-        # size
-        if x.shape[0] % self.minibatch_size != 0:
-            raise ValueError('Not a multiple of minibatch size: %d' %
-                self.minibatch_size)
+            
+# not fair to client to make them worry about minibatch divisibility
+#         # Enforce that the data set is an integer multiple of the mini-batch
+#         # size
+        
+#         if x.shape[0] % self.minibatch_size != 0:
+#             raise ValueError('Not a multiple of minibatch size: %d' %
+#                 self.minibatch_size)
         def minibatches():
             indices = np.arange(x.shape[0])
+            #not sure about shuffling here
             np.random.shuffle(indices)
-            for i in xrange(x.shape[0]/self.minibatch_size):
-                low = i * self.minibatch_size
-                up = low + self.minibatch_size
-                yield x[indices[low:up]]
+            #no need to enforce dividing evenly with minibatch size because this iterator cuts off early
+            for i in xrange(0, x.shape[0] - self.minibatch_size + 1, self.minibatch_size):
+                excerpt = slice(i, i + self.minibatch_size)
+                yield x[excerpt]
         return minibatches
 
     def fit(self, x_train, y_train=None):
