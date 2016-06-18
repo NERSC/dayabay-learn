@@ -32,7 +32,7 @@ if __name__ == "__main__":
     #class for networks architecture
     cae = IBDPairConvAe(epochs=epochs)
     
-    train, val, test = get_ibd_data()
+    train, val, test = get_ibd_data(tot_num_pairs=10000)
 
     #uses scikit-learn interface (so this trains on X_train)
     cae.fit(train)
