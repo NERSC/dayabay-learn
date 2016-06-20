@@ -136,18 +136,7 @@ class IBDPairConvAe(AbstractNetwork):
         if y is not None:
             raise ValueError("We don't need labels here")
             
-# not fair to client to make them worry about minibatch divisibility
-#         # Enforce that the data set is an integer multiple of the mini-batch
-#         # size
-        
-#         if x.shape[0] % self.minibatch_size != 0:
-#             raise ValueError('Not a multiple of minibatch size: %d' %
-#                 self.minibatch_size)
         def minibatches():
-            indices = np.arange(x.shape[0])
-            #not sure about shuffling here
-            np.random.shuffle(indices)
-            #no need to enforce dividing evenly with minibatch size because this iterator cuts off early
             for i in xrange(0, x.shape[0] - self.minibatch_size + 1, self.minibatch_size):
                 excerpt = slice(i, i + self.minibatch_size)
                 yield x[excerpt]

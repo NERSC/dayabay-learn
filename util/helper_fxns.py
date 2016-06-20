@@ -2,25 +2,17 @@ import numpy as np
 import os
 
 
-#getting rid of the in place option (just complicates things. When would we not do this in place?)
 def center(data):
     '''Subtract the mean over all samples and pixels, independent by channel.
 
-    If in_place, update the given data array and return the array of means.
-    Else, return (array of means, new array).
-
     Expects data of the form [batch, channel, height, width].'''
     means = data.mean(axis=(0, 2, 3), keepdims=True)
-    #due to numpy objects passed by reference (almost forgot about this)
     data -= means
     return means.flatten()
 
 def scale(data, std=None, mode="standardize"):
     '''Scale the data to the given std over all samples and pixels, independent
     by channel.
-
-    If in_place, update the given data array and return the array of stds.
-    Else, return (array of stds, new array).
 
     Expects data of the form [batch, channel, height, width].'''
     
@@ -131,9 +123,4 @@ def get_equal_per_class(X,y, nclass):
 #     print y.shape
     
     return X,y
-
-
-
-
-
 
