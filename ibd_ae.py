@@ -34,6 +34,8 @@ def setup_parser():
         help='number of epochs for training')
     parser.add_argument('-w', '--bottleneck-width', type=int, default=10,
         help='number of features in the bottleneck layer')
+    parser.add_argument('-o', '--output', default=None,
+        help='optionally save AE prediction to specified h5 file')
     return parser
 
 if __name__ == "__main__":
@@ -66,3 +68,13 @@ if __name__ == "__main__":
 
     #plot the 2D-projection of the features
     v.plot_features(x_pc,save=True)
+
+    if args.output is not None:
+        logging.info('Saving autoencoder output')
+        outdata = np.vstack((cae.predict(train)[1], cae.predict(val)[1],
+            cae.predict(test)[1]))
+        filename = args.output
+        outfile = h5py.File(filename, 'w')
+        outdset = outfile.create_dataset("ibd_pair_predictions", data=outdata,
+            compression="gzip", chunks=True)
+
