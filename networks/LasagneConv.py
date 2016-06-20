@@ -85,14 +85,14 @@ class IBDPairConvAe(AbstractNetwork):
             stride=(2, 2),
             W=initial_weights)
         # post-deconv shape = (minibatch_size, 16, 4, 11)
-        network = l.layers.TransposedConv2DLayer(
+        network = l.layers.Deconv2DLayer(
             network,
             num_filters=16,
             filter_size=(2, 5),
             stride=(2, 2),
             W=initial_weights)
         # post-deconv shape = (minibatch_size, input_depth, 8, 24)
-        network = l.layers.TransposedConv2DLayer(
+        network = l.layers.Deconv2DLayer(
             network,
             num_filters=self.image_shape[0],
             filter_size=(2, 4),
