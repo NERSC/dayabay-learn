@@ -157,9 +157,9 @@ class IBDPairConvAe(AbstractNetwork):
         '''Fit and train the autoencoder to the x_train data.'''
         if y_train is not None:
             raise ValueError("We don't need labels here")
-        minibatches = self.minibatch_iterator(x_train)
         logging.info("Training with %d training samples" % x_train.shape[0])
         for epoch in xrange(self.epochs):
+            minibatches = self.minibatch_iterator(x_train)
             for inputs in minibatches():
                 cost = self.train_once(inputs)
             logging.info("loss after epoch %d is %f", epoch, cost)
