@@ -5,7 +5,7 @@ import numpy as np
 import pickle
 import glob
 import os
-from helper_fxns import center, scale
+from helper_fxns import center, scale, fix_time_zeros
 from operator import mul
 
 def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, tot_num_pairs=-1):
@@ -48,6 +48,9 @@ def get_ibd_data(path_prefix="/project/projectdirs/dasrepo/ibd_pairs", mode='sta
     
     h5filename = "all_pairs.h5"
     train, val, test = load_ibd_pairs(path=os.path.join(path_prefix, h5filename), tot_num_pairs=tot_num_pairs)
+    fix_time_zeros(train)
+    fix_time_zeros(val)
+    fix_time_zeros(test)
     center(train)
     center(val)
     center(test)
