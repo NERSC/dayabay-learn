@@ -137,9 +137,19 @@ class IBDPairConvAe(AbstractNetwork):
             raise ValueError("We don't need labels here")
             
         def minibatches():
-            for i in xrange(0, x.shape[0] - self.minibatch_size + 1, self.minibatch_size):
+            numinputs = x.shape[0]
+            indices = np.arange(numinputs)
+            # Shuffle order each time a new set of minibatches is requested
+            np.random.shuffle(indices)
+            # Check for the small-sample case, in which case we don't use a
+            # minibatch
+            if numinputs > self.minibatch_size:
+                upper = numinputs - self.minibatch_size + 1
+            else:
+                upper = numinputs
+            for i in xrange(0, upper, self.minibatch_size):
                 excerpt = slice(i, i + self.minibatch_size)
-                yield x[excerpt]
+                yield x[indices[excerpt]]
         return minibatches
 
     def fit(self, x_train, y_train=None):
