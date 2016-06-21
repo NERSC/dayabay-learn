@@ -34,6 +34,8 @@ def setup_parser():
         help='number of epochs for training')
     parser.add_argument('-w', '--bottleneck-width', type=int, default=10,
         help='number of features in the bottleneck layer')
+    parser.add_argument('-n', '--numpairs', type=int, default=-1,
+        help='number of IBD pairs to use')
     parser.add_argument('-o', '--output', default=None,
         help='optionally save AE prediction to specified h5 file')
     return parser
@@ -47,7 +49,7 @@ if __name__ == "__main__":
     cae = IBDPairConvAe(bottleneck_width=args.bottleneck_width,
         epochs=args.epochs)
     logging.info('Preprocessing data files')
-    train, val, test = get_ibd_data(tot_num_pairs=10000)
+    train, val, test = get_ibd_data(tot_num_pairs=args.numpairs)
 
     #uses scikit-learn interface (so this trains on X_train)
     logging.info('Training network')
