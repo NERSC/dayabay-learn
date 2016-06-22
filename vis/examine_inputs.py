@@ -67,7 +67,6 @@ def smearTimeZeros(data):
     iterations = 0
     while len(stillbad) > 0 and iterations < 3:
         iterations += 1
-        logging.debug('points that were not fixed: %s', str(stillbad))
         bads = stillbad
         stillbad = []
         neighbors = channelNeighbors(bads, data, axes=(2, 3),
@@ -88,11 +87,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.file is None:
-        infile = ('/global/homes/s/skohn/ml/dayabay-data-conversion/' +
-            'extract_ibd/ibd_yasu_0_9999.h5')
+        infile = ('/project/projectdirs/dasrepo/ibd_pairs/all_pairs.h5')
     else:
         infile = args.file
-    data, _, _ = load_ibd_pairs(infile, train_frac=1, valid_frac = 0)
+    data, _, _ = load_ibd_pairs(infile, train_frac=1, valid_frac = 0,
+    tot_num_pairs=1000)
 
     if not args.no_fix_zeros:
         # Before adjusting values, get rid of zeros in time channels by replacing
