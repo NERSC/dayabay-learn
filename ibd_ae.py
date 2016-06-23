@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from vis.viz import Viz
 from util.data_loaders import load_ibd_pairs, get_ibd_data
-from networks.LasagneConv import IBDPairConvAe
+from networks.LasagneConv import IBDPairConvAe, IBDPairConvAe2
 import argparse
 import logging
 logging.basicConfig(format='%(levelname)s:\t%(message)s')
@@ -40,6 +40,12 @@ def setup_parser():
         help='optionally save AE prediction to specified h5 file')
     parser.add_argument('-l', '--learn_rate', default=0.001, type=float,
         help='the learning rate for the network')
+    parser.add_argument('--network', default='IBDPairConvAe',
+        choices=[
+            'IBDPairConvAe',
+            'IBDPairConvAe2',
+        ],
+        help='network to use')
     return parser
 
 if __name__ == "__main__":
@@ -47,8 +53,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     #class for networks architecture
-    logging.info('Constructing untrained ConvNet')
-    cae = IBDPairConvAe(bottleneck_width=args.bottleneck_width,
+    logging.info('Constructing untrained ConvNet of class %s', args.network)
+    convnet_class = eval(args.network)
+    cae = convnet_class(bottleneck_width=args.bottleneck_width,
         epochs=args.epochs, learn_rate=args.learn_rate)
     logging.info('Preprocessing data files')
     train, val, test = get_ibd_data(tot_num_pairs=args.numpairs)
