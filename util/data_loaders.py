@@ -59,3 +59,12 @@ def get_ibd_data(path_prefix="/project/projectdirs/dasrepo/ibd_pairs", mode='sta
     scale(test, 1, mode=mode)
     
     return train, val, test
+
+def load_predictions(filepath=None, tot_num_pairs=-1):
+    if filepath is None:
+        filepath = os.path.join(os.environ['PWD'], 'prediction.h5')
+    infile = h5py.File(filepath, 'r')
+    h5set = infile['ibd_pair_predictions']
+    if tot_num_pairs==-1:
+        tot_num_pairs = h5set.shape[0]
+    return np.asarray(h5set[:tot_num_pairs])

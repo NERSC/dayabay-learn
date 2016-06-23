@@ -8,7 +8,7 @@ import os
 import logging
 logging.getLogger().setLevel(logging.DEBUG)
 sys.path.append(os.path.abspath('../util'))
-from data_loaders import load_ibd_pairs
+from data_loaders import load_ibd_pairs, load_predictions
 from helper_fxns import center, scale
 
 def channelNeighbors(points, full, axes=(2, 3), condition=lambda x:True,
@@ -78,8 +78,13 @@ def smearTimeZeros(data):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--file', default=None, help='file to read')
-    parser.add_argument('-i', '--index', default=0, type=int,
+    parser.add_argument('-e', '--event', default=0, type=int,
         help='event index to read')
+    gp = parser.add_mutually_exclusive_group(required=True)
+    gp.add_argument('-i', '--input', action='store_true',
+        help='interpret the file as input')
+    gp.add_argument('-o', '--output', action='store_true',
+        help='interpret the file as output')
     parser.add_argument('--no-preprocess', action='store_true',
         help='turn off data centering and scaling')
     parser.add_argument('--no-fix-zeros', action='store_true',
@@ -90,25 +95,26 @@ if __name__ == '__main__':
         infile = ('/project/projectdirs/dasrepo/ibd_pairs/all_pairs.h5')
     else:
         infile = args.file
-    data, _, _ = load_ibd_pairs(infile, train_frac=1, valid_frac = 0,
-    tot_num_pairs=1000)
+    if args.input:
+        data, _, _ = load_ibd_pairs(infile, train_frac=1, valid_frac = 0,
+            tot_num_pairs=1000)
+        if not args.no_fix_zeros:
+            # Before adjusting values, get rid of zeros in time channels by replacing
+            # them with the average of the neighboring cells
+            smearTimeZeros(data[:1000])
+        if not args.no_preprocess:
+            center(data[:1000])
+            scale(data[:1000], 1)
+    elif args.output:
+        data = load_predictions(infile, tot_num_pairs=1000)
 
-    if not args.no_fix_zeros:
-        # Before adjusting values, get rid of zeros in time channels by replacing
-        # them with the average of the neighboring cells
-        smearTimeZeros(data[:1000])
 
-
-    if not args.no_preprocess:
-        center(data[:1000])
-        scale(data[:1000], 1)
-
-    event = data[args.index]
+    event = data[args.event]
     # Construct pyplot canvas with images
     image_args = {
         'interpolation': 'nearest',
         'aspect': 'auto',
-        'cmap': plt.get_cmap('spectral')
+        'cmap': plt.get_cmap('PuBu')
     }
     fig = plt.figure(1)
     prompt_charge_ax = plt.subplot(2, 2, 1)
