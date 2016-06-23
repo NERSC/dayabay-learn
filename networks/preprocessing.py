@@ -93,12 +93,12 @@ def scale_min_max(data, min_=-1, max_=1):
     mins = data.min(axis=(0, 2, 3), keepdims=True)
     maxes = data.max(axis=(0, 2, 3), keepdims=True)
 
-    #data = 2 * ((data - mins) / (maxes - mins)) - 1
+    #data = (max_ - min_) * ((data - mins) / (maxes - mins)) + min_
     #in place
     data -= mins
     data /= (maxes-mins)
-    data *= 2
-    data -= 1
+    data *= max_ - min_
+    data += min_
     return (mins, maxes)
     
 def filter_out_zeros(X,y):
