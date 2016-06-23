@@ -30,3 +30,7 @@ class AbstractNetwork(object):
     def minibatch_iterator(self, x, y):
         '''iterate over minibatches'''
         raise NotImplemented()
+
+    def preprocess_data(self, x):
+        '''get data ready to go into the network'''
+        raise NotImplemented()

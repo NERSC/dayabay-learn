@@ -9,6 +9,7 @@ import logging
 logging.getLogger().setLevel(logging.DEBUG)
 
 from Network import AbstractNetwork
+import preprocessing
 
 class IBDPairConvAe(AbstractNetwork):
     '''A convolutional autoencoder for interpreting candidate IBD pairs.'''
@@ -179,3 +180,19 @@ class IBDPairConvAe(AbstractNetwork):
                 out_fn = theano.function([self.input_var], output)
                 return out_fn(data)
         raise ValueError('"%s" is not a layer in our network' % layer)
+
+    def preprocess_data(self, x, y=None):
+        '''Prepare the data for the neural network.
+
+            - Remove 0's from the time channels
+            - Center the data on 0
+            - Scale it to have a standard deviation of 1'''
+        std = 1
+        preprocessing.fix_time_zeros(x)
+        means = preprocessing.center(x)
+        stds = preprocessing.scale(x, std, mode='standardize')
+        def repeat_transformation(other):
+            preprocessing.fix_time_zeros(other)
+            other -= means
+            other /= stds/std
+        return repeat_transformation

@@ -50,6 +50,9 @@ if __name__ == "__main__":
         epochs=args.epochs)
     logging.info('Preprocessing data files')
     train, val, test = get_ibd_data(tot_num_pairs=args.numpairs)
+    preprocess = cae.preprocess_data(train)
+    preprocess(val)
+    preprocess(test)
 
     #uses scikit-learn interface (so this trains on X_train)
     logging.info('Training network')

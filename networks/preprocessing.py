@@ -8,7 +8,7 @@ def center(data):
     Expects data of the form [batch, channel, height, width].'''
     means = data.mean(axis=(0, 2, 3), keepdims=True)
     data -= means
-    return means.flatten()
+    return means
 
 def scale(data, std=None, mode="standardize"):
     '''Scale the data to the given std over all samples and pixels, independent
@@ -19,7 +19,7 @@ def scale(data, std=None, mode="standardize"):
     if mode == "standardize":
         stds = data.std(axis=(0, 2, 3), keepdims=True)
         data /= stds/std
-        return stds.flatten()
+        return stds
     elif mode == "normalize":
         scale_min_max(data)
     else:
@@ -99,6 +99,7 @@ def scale_min_max(data, min_=-1, max_=1):
     data /= (maxes-mins)
     data *= 2
     data -= 1
+    return (mins, maxes)
     
 def filter_out_zeros(X,y):
     
