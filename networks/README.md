@@ -59,3 +59,21 @@ performed, etc.
         - 4 filters
         - (2, 4) filter size
         - (2, 2) stride
+
+IBDPairConvAe2
+-----------
+
+This convolutional autoencoder is based on
+[IBDPairConvAe](https://github.com/NERSC/dayabay-learn/tree/master/networks#ibdpairconvae).
+It is identical in all respects except for the preprocessing and final
+deconvolutional layer.
+
+ - File:
+[LasagneConv.py](https://github.com/NERSC/dayabay-learn/blob/master/networks/LasagneConv.py)
+
+ - Preprocessing changes:
+    - Divide each channel by a constant (common over events) so that each
+      channel's minimum pixel has value -1 and each channel's maximum has value
+      +1. This is instead of rescaling so that the standard deviation is 1.
+ - Final deconvolutional layer changes:
+    - Tanh activation
