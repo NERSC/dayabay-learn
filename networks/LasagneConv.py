@@ -7,7 +7,6 @@ import lasagne as l
 from operator import mul
 import logging
 logging.getLogger().setLevel(logging.DEBUG)
-from overrides import overrides
 
 from Network import AbstractNetwork
 import preprocessing
@@ -206,7 +205,6 @@ class IBDPairConvAe2(IBDPairConvAe):
         '''Initialize an IBDPairConvAe2.'''
         super(IBDPairConvAe2, self).__init__(*args, **kwargs)
 
-    @overrides
     def _setup_network(self):
         '''Set up the IBDPairConvAe network but have it scale output to +/- 1'''
         network = super(IBDPairConvAe2, self)._setup_network()
@@ -214,7 +212,6 @@ class IBDPairConvAe2(IBDPairConvAe):
         network.nonlinearity = l.nonlinearities.tanh
         return network
 
-    @overrides
     def preprocess_data(self, x, y=None):
         '''Prepare the data for the neural network.
 
