@@ -68,7 +68,7 @@ class IBDPairConvAe(AbstractNetwork):
         network = l.layers.MaxPool2DLayer(
             network,
             pool_size=(2, 2))
-        # post-conv shape = (minibatch_size, 10, 1, 1)
+        # post-conv shape = (minibatch_size, bottleneck_width, 1, 1)
         network = l.layers.Conv2DLayer(
             network,
             name='bottleneck',
@@ -85,14 +85,14 @@ class IBDPairConvAe(AbstractNetwork):
             stride=(2, 2),
             W=initial_weights)
         # post-deconv shape = (minibatch_size, 16, 4, 11)
-        network = l.layers.TransposedConv2DLayer(
+        network = l.layers.Deconv2DLayer(
             network,
             num_filters=16,
             filter_size=(2, 5),
             stride=(2, 2),
             W=initial_weights)
         # post-deconv shape = (minibatch_size, input_depth, 8, 24)
-        network = l.layers.TransposedConv2DLayer(
+        network = l.layers.Deconv2DLayer(
             network,
             num_filters=self.image_shape[0],
             filter_size=(2, 4),
@@ -136,30 +136,29 @@ class IBDPairConvAe(AbstractNetwork):
         if y is not None:
             raise ValueError("We don't need labels here")
             
-# not fair to client to make them worry about minibatch divisibility
-#         # Enforce that the data set is an integer multiple of the mini-batch
-#         # size
-        
-#         if x.shape[0] % self.minibatch_size != 0:
-#             raise ValueError('Not a multiple of minibatch size: %d' %
-#                 self.minibatch_size)
         def minibatches():
-            indices = np.arange(x.shape[0])
-            #not sure about shuffling here
+            numinputs = x.shape[0]
+            indices = np.arange(numinputs)
+            # Shuffle order each time a new set of minibatches is requested
             np.random.shuffle(indices)
-            #no need to enforce dividing evenly with minibatch size because this iterator cuts off early
-            for i in xrange(0, x.shape[0] - self.minibatch_size + 1, self.minibatch_size):
+            # Check for the small-sample case, in which case we don't use a
+            # minibatch
+            if numinputs > self.minibatch_size:
+                upper = numinputs - self.minibatch_size + 1
+            else:
+                upper = numinputs
+            for i in xrange(0, upper, self.minibatch_size):
                 excerpt = slice(i, i + self.minibatch_size)
-                yield x[excerpt]
+                yield x[indices[excerpt]]
         return minibatches
 
     def fit(self, x_train, y_train=None):
         '''Fit and train the autoencoder to the x_train data.'''
         if y_train is not None:
             raise ValueError("We don't need labels here")
-        minibatches = self.minibatch_iterator(x_train)
         logging.info("Training with %d training samples" % x_train.shape[0])
         for epoch in xrange(self.epochs):
+            minibatches = self.minibatch_iterator(x_train)
             for inputs in minibatches():
                 cost = self.train_once(inputs)
             logging.info("loss after epoch %d is %f", epoch, cost)

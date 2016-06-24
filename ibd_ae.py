@@ -13,7 +13,9 @@ from sklearn.decomposition import PCA
 from vis.viz import Viz
 from util.data_loaders import load_ibd_pairs, get_ibd_data
 from networks.LasagneConv import IBDPairConvAe
+import argparse
 import logging
+logging.basicConfig(format='%(levelname)s:\t%(message)s')
 
 
 
@@ -26,22 +28,40 @@ import logging
 
 # In[118]:
 
-if __name__ == "__main__":
+def setup_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-e', '--epochs', type=int, default=10,
+        help='number of epochs for training')
+    parser.add_argument('-w', '--bottleneck-width', type=int, default=10,
+        help='number of features in the bottleneck layer')
+    parser.add_argument('-n', '--numpairs', type=int, default=-1,
+        help='number of IBD pairs to use')
+    parser.add_argument('-o', '--output', default=None,
+        help='optionally save AE prediction to specified h5 file')
+    return parser
 
-    epochs = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+if __name__ == "__main__":
+    parser = setup_parser()
+    args = parser.parse_args()
+
     #class for networks architecture
-    cae = IBDPairConvAe(epochs=epochs)
-    
-    train, val, test = get_ibd_data(tot_num_pairs=10000)
+    logging.info('Constructing untrained ConvNet')
+    cae = IBDPairConvAe(bottleneck_width=args.bottleneck_width,
+        epochs=args.epochs)
+    logging.info('Preprocessing data files')
+    train, val, test = get_ibd_data(tot_num_pairs=args.numpairs)
 
     #uses scikit-learn interface (so this trains on X_train)
+    logging.info('Training network')
     cae.fit(train)
 
     #extract the hidden layer outputs when running x_val thru autoencoder
+    logging.info('Extracting bottleneck layer')
     feat = cae.extract_layer(val, 'bottleneck')[:, :, 0, 0]
     logging.debug('feat.shape = %s', str(feat.shape))
     gr_truth = np.ones(val.shape[0])
 
+    logging.info('Constructing visualization')
     v = Viz(gr_truth)
 
     # take first two principal components of features, so we can plot easily
@@ -50,3 +70,13 @@ if __name__ == "__main__":
 
     #plot the 2D-projection of the features
     v.plot_features(x_pc,save=True)
+
+    if args.output is not None:
+        logging.info('Saving autoencoder output')
+        outdata = np.vstack((cae.predict(train)[1], cae.predict(val)[1],
+            cae.predict(test)[1]))
+        filename = args.output
+        outfile = h5py.File(filename, 'w')
+        outdset = outfile.create_dataset("ibd_pair_predictions", data=outdata,
+            compression="gzip", chunks=True)
+
