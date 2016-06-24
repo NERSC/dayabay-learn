@@ -38,6 +38,8 @@ def setup_parser():
         help='number of IBD pairs to use')
     parser.add_argument('-o', '--output', default=None,
         help='optionally save AE prediction to specified h5 file')
+    parser.add_argument('-l', '--learn_rate', default=0.001, type=float,
+        help='the learning rate for the network')
     return parser
 
 if __name__ == "__main__":
@@ -47,7 +49,7 @@ if __name__ == "__main__":
     #class for networks architecture
     logging.info('Constructing untrained ConvNet')
     cae = IBDPairConvAe(bottleneck_width=args.bottleneck_width,
-        epochs=args.epochs)
+        epochs=args.epochs, learn_rate=args.learn_rate)
     logging.info('Preprocessing data files')
     train, val, test = get_ibd_data(tot_num_pairs=args.numpairs)
     preprocess = cae.preprocess_data(train)
