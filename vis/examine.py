@@ -8,72 +8,9 @@ import os
 import logging
 logging.getLogger().setLevel(logging.DEBUG)
 sys.path.append(os.path.abspath('../util'))
+sys.path.append(os.path.abspath('../networks'))
 from data_loaders import load_ibd_pairs, load_predictions
-from helper_fxns import center, scale
-
-def channelNeighbors(points, full, axes=(2, 3), condition=lambda x:True,
-        stillbad = None):
-    '''Create a list of orthogonal neighbors of each point that satisfy the given
-    condition.
-
-    return_val[i] = [(neighbor 1 index), (neighbor 2 index), ...] for points[i]
-
-    Axes specifies the directions to explore for neighbors. For example,
-    specifying axes=(2, 3) will hold the first 2 indices constant and only
-    adjust the 2nd and 3rd indices.
-
-    Condition is a function of the potential neighbor. For example it can test
-    if the neighbor is nonzero. Any neighbor for which the condition returns
-    True is included.
-    
-    Stillbad is an optional list to hold point indices that have no neighbors
-    satisfying condition. If provided, it should be specified as an empty list.'''
-    # adjust the condition to apply to the data at an index rather than at the
-    # index itself (as filter() would normally assume)
-    condition_full = lambda x:condition(full[x])
-    shape = full.shape
-    all_neighbors = []
-    for point in points:
-        point_neighbors = []
-        for axis in axes:
-            test_point_low = np.asarray(point)
-            test_point_up = test_point_low.copy()
-            if test_point_low[axis] > 0:
-                test_point_low[axis] -= 1
-                point_neighbors.append(tuple(test_point_low))
-            if test_point_up[axis] < shape[axis] - 1:
-                test_point_up[axis] += 1
-                point_neighbors.append(tuple(test_point_up))
-        good_neighbors = filter(condition_full, point_neighbors)
-        if len(good_neighbors) == 0:
-            if stillbad is not None:
-                stillbad.append(point)
-        all_neighbors.append(good_neighbors)
-    return all_neighbors
-
-def smearTimeZeros(data):
-    bads = zip(*np.nonzero(data == 0))
-    # Only take the time channels (not the charge channels)
-    bads = filter(lambda x:x[1] in (1, 3), bads)
-
-
-    # Get list of neighbors for each point
-    # [[point 0 neighbors], [point 1 neighbors], ...]
-    stillbad = []
-    neighbors = channelNeighbors(bads, data, axes=(2, 3),
-        condition=lambda x:x < 0, stillbad=stillbad)
-    replacements = np.hstack(np.mean(data[zip(*ns)]) if len(ns) > 0 else 0 for ns in neighbors)
-    data[zip(*bads)] = replacements
-    iterations = 0
-    while len(stillbad) > 0 and iterations < 3:
-        iterations += 1
-        bads = stillbad
-        stillbad = []
-        neighbors = channelNeighbors(bads, data, axes=(2, 3),
-            condition=lambda x:x < 0, stillbad=stillbad)
-        replacements = np.hstack(np.mean(data[zip(*ns)]) if len(ns) > 0 else 0 for ns in neighbors)
-        data[zip(*bads)] = replacements
-
+from LasagneConv import IBDPairConvAe, IBDPairConvAe2
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -85,28 +22,28 @@ if __name__ == '__main__':
         help='interpret the file as input')
     gp.add_argument('-o', '--output', action='store_true',
         help='interpret the file as output')
-    parser.add_argument('--no-preprocess', action='store_true',
-        help='turn off data centering and scaling')
-    parser.add_argument('--no-fix-zeros', action='store_true',
-        help='turn of zero replacement')
+    parser.add_argument('--preprocess', default=None, choices=[
+            None,
+            'IBDPairConvAe',
+            'IBDPairConvAe2',
+        ],
+        help='preprocess with the given network')
     args = parser.parse_args()
 
+    num_pairs = 10
     if args.file is None:
         infile = ('/project/projectdirs/dasrepo/ibd_pairs/all_pairs.h5')
     else:
         infile = args.file
     if args.input:
         data, _, _ = load_ibd_pairs(infile, train_frac=1, valid_frac = 0,
-            tot_num_pairs=1000)
-        if not args.no_fix_zeros:
-            # Before adjusting values, get rid of zeros in time channels by replacing
-            # them with the average of the neighboring cells
-            smearTimeZeros(data[:1000])
-        if not args.no_preprocess:
-            center(data[:1000])
-            scale(data[:1000], 1)
+            tot_num_pairs=num_pairs)
+        if args.preprocess is not None:
+            conv_class = eval(args.preprocess)
+            cae = conv_class()
+            cae.preprocess_data(data)
     elif args.output:
-        data = load_predictions(infile, tot_num_pairs=1000)
+        data = load_predictions(infile, tot_num_pairs=num_pairs)
 
 
     event = data[args.event]
