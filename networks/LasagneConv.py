@@ -196,3 +196,37 @@ class IBDPairConvAe(AbstractNetwork):
             other -= means
             other /= stds/std
         return repeat_transformation
+
+
+class IBDPairConvAe2(IBDPairConvAe):
+    '''A CAE based on IBDPairConvAe that scales input and output to be between
+       [-1, 1].'''
+    def __init__(self, *args, **kwargs):
+        '''Initialize an IBDPairConvAe2.'''
+        super(IBDPairConvAe2, self).__init__(*args, **kwargs)
+
+    def _setup_network(self):
+        '''Set up the IBDPairConvAe network but have it scale output to +/- 1'''
+        network = super(IBDPairConvAe2, self)._setup_network()
+        # The "network" is really a pointer to the output deconv layer
+        network.nonlinearity = l.nonlinearities.tanh
+        return network
+
+    def preprocess_data(self, x, y=None):
+        '''Prepare the data for the neural network.
+
+            - Remove 0's from the time channels
+            - Center the data on 0
+            - Scale it to have lie on the interval [-1, 1]'''
+        preprocessing.fix_time_zeros(x)
+        means = preprocessing.center(x)
+        min_, max_, = -1, 1
+        mins, maxes = preprocessing.scale_min_max(x, min_, max_)
+        def repeat_transformation(other):
+            preprocessing.fix_time_zeros(other)
+            other -= means
+            other -= mins
+            other /= maxes - mins
+            other *= max_ - min_
+            other += min_
+        return repeat_transformation
