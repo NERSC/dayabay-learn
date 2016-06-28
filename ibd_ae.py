@@ -67,14 +67,17 @@ if __name__ == "__main__":
     gr_truth = np.ones(val.shape[0])
 
     logging.info('Constructing visualization')
-    v = Viz(gr_truth)
+    v = Viz(gr_truth,nclass=1)
 
     # take first two principal components of features, so we can plot easily
     #normally we would do t-SNE (but takes too long for quick demo)
-    x_pc = v.get_pca(feat)
+    #x_pc = v.get_pca(feat)
+
+    num_feats = 500 if feat.shape[0] > 500 else feat.shape[0]
+    x_ts = v.get_tsne(feat[:num_feats])
 
     #plot the 2D-projection of the features
-    v.plot_features(x_pc,save=True)
+    v.plot_features(x_ts,save=True)
 
     if args.output is not None:
         logging.info('Saving autoencoder output')
