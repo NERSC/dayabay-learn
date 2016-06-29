@@ -22,6 +22,8 @@ if __name__ == '__main__':
         help='interpret the file as input')
     gp.add_argument('-o', '--output', action='store_true',
         help='interpret the file as output')
+    parser.add_argument('--flex-color', action='store_true',
+        help='use a variable color scale per plot')
     parser.add_argument('--preprocess', default=None, choices=[
             None,
             'IBDPairConvAe',
@@ -53,6 +55,11 @@ if __name__ == '__main__':
         'aspect': 'auto',
         'cmap': plt.get_cmap('PuBu')
     }
+    if not args.flex_color:
+        image_args.update({
+            'vmin': -1,
+            'vmax': 1,
+        })
     fig = plt.figure(1)
     prompt_charge_ax = plt.subplot(2, 2, 1)
     prompt_charge_im = plt.imshow(event[0], **image_args)
