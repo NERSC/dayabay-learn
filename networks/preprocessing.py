@@ -88,10 +88,11 @@ def fix_time_zeros(data):
         replacements = np.hstack(np.mean(data[zip(*ns)]) if len(ns) > 0 else 0 for ns in neighbors)
         data[zip(*bads)] = replacements
     
-def scale_min_max(data, min_=-1, max_=1):
+def scale_min_max(data, min_=-1, max_=1, mins=None,maxes=None):
     '''scales data to be between min and max in place'''
-    mins = data.min(axis=(0, 2, 3), keepdims=True)
-    maxes = data.max(axis=(0, 2, 3), keepdims=True)
+    if mins is None or maxes is None:
+        mins = data.min(axis=(0, 2, 3), keepdims=True)
+        maxes = data.max(axis=(0, 2, 3), keepdims=True)
 
     #data = (max_ - min_) * ((data - mins) / (maxes - mins)) + min_
     #in place
