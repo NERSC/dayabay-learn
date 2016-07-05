@@ -6,7 +6,7 @@ import pickle
 import glob
 import os
 from operator import mul
-
+from networks.preprocessing import scale, scale_min_max
 def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, tot_num_pairs=-1):
     '''Load up the hdf5 file given into a set of numpy arrays suitable for
     convnets.
@@ -42,12 +42,24 @@ def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, tot_num_pairs=-1):
     return (train, valid, test)
 
 
-def get_ibd_data(path_prefix="/project/projectdirs/dasrepo/ibd_pairs", mode='standardize',
-                tot_num_pairs=-1):
+def get_ibd_data(path_prefix="/project/projectdirs/dasrepo/ibd_pairs", preprocess=False, mode='normalize',
+                tot_num_pairs=-1, just_charges=False):
     
     h5filename = "all_pairs.h5"
     train, val, test = load_ibd_pairs(path=os.path.join(path_prefix, h5filename), tot_num_pairs=tot_num_pairs)
-    
+    #would be nice to optionally preprocess upon loading (mostly for unit testing)
+    if just_charges:
+        train = train[:,[0,2]]
+        val = val[:,[0,2]]
+        test = test[:,[0,2]]
+    if preprocess:
+        if mode == 'normalize':
+            mins, maxes = scale_min_max(train)
+            scale_min_max(test,mins=mins,maxes=maxes)
+            scale_min_max(val,mins=mins,maxes=maxes)
+        
+            
+        
     return train, val, test
 
 def load_predictions(filepath=None, tot_num_pairs=-1):
