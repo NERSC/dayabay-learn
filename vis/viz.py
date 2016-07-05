@@ -52,7 +52,7 @@ class Viz(object):
         x_ts = ts.fit_transform(feat.astype('float64'))
         return x_ts
     def plot_reconstruction(self,x_inp,x_reconstructed,indx=0, save=False):
-        plt.figure(1)
+        plt.figure(indx)
         plt.clf()
         ims = [x_inp, x_reconstructed]
         info = ['original', 'reconstructed']
