@@ -14,6 +14,7 @@ class AbstractNetwork(object):
         self.train_cost = None
         self.test_cost = None
         self.optimizer = None
+        self.train_loop_hooks = []
 
     def fit(self, x_train, y_train):
         '''train network'''

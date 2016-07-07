@@ -163,6 +163,8 @@ class IBDPairConvAe(AbstractNetwork):
             minibatches = self.minibatch_iterator(x_train)
             for inputs in minibatches():
                 cost = self.train_once(inputs)
+                for fn in self.train_loop_hooks:
+                    fn(epoch, cost)
             logging.info("loss after epoch %d is %f", epoch, cost)
 
     def predict(self, x, y=None):

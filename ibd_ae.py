@@ -69,13 +69,16 @@ if __name__ == "__main__":
 
     #uses scikit-learn interface (so this trains on X_train)
     logging.info('Training network')
+    epochs = []
+    costs = []
+    def saveprogress(epoch, cost):
+        epochs.append(epoch)
+        costs.append(cost)
+    cae.train_loop_hooks.append(saveprogress)
     cae.fit(train)
 
-    #extract the hidden layer outputs when running x_val thru autoencoder
-    logging.info('Extracting bottleneck layer')
-    feat = cae.extract_layer(val, 'bottleneck')[:, :, 0, 0]
-    logging.debug('feat.shape = %s', str(feat.shape))
-    gr_truth = np.ones(val.shape[0])
+    plt.plot(epochs, costs)
+    plt.savefig('test.pdf')
 
     logging.info('Constructing visualization')
     v = Viz(gr_truth,nclass=1)
