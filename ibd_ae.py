@@ -17,6 +17,7 @@ from networks.LasagneConv import IBDChargeDenoisingConvAe
 import argparse
 import logging
 logging.basicConfig(format='%(levelname)s:\t%(message)s')
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 
@@ -77,7 +78,6 @@ if __name__ == "__main__":
     preprocess(test)
 
     #uses scikit-learn interface (so this trains on X_train)
-    logging.info('Training network')
     epochs = []
     costs = []
     def saveprogress(**kwargs):
@@ -100,8 +100,13 @@ if __name__ == "__main__":
             plt.title('output %d' % i)
         plt.savefig('results/progress/reco%d.pdf' % kwargs['epoch'])
         plt.clf()
+    def log_message_cost(**kwargs):
+        logging.debug('Loss after epoch %d is %f', kwargs['epoch'],
+            kwargs['cost'])
+    cae.epoch_loop_hooks.append(log_message_cost)
     cae.epoch_loop_hooks.append(saveprogress)
     cae.epoch_loop_hooks.append(plotcomparisons)
+    logging.info('Training network with %d samples', train.shape[0])
     cae.fit(train)
 
     if args.save_model:

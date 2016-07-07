@@ -5,8 +5,6 @@ import theano
 import theano.tensor as T
 import lasagne as l
 from operator import mul
-import logging
-logging.getLogger().setLevel(logging.DEBUG)
 
 from Network import AbstractNetwork
 import preprocessing
@@ -159,7 +157,6 @@ class IBDPairConvAe(AbstractNetwork):
         '''Fit and train the autoencoder to the x_train data.'''
         if y_train is not None:
             raise ValueError("We don't need labels here")
-        logging.info("Training with %d training samples" % x_train.shape[0])
         for epoch in xrange(self.epochs):
             minibatches = self.minibatch_iterator(x_train)
             for inputs in minibatches():
@@ -173,7 +170,6 @@ class IBDPairConvAe(AbstractNetwork):
             }
             for fn in self.epoch_loop_hooks:
                 fn(**kwargs)
-            logging.info("loss after epoch %d is %f", epoch, cost)
 
     def predict(self, x, y=None):
         '''Predict the autoencoded image without training.'''
