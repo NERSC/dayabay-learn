@@ -11,6 +11,7 @@ sys.path.append(os.path.abspath('../util'))
 sys.path.append(os.path.abspath('../networks'))
 from data_loaders import load_ibd_pairs, load_predictions
 from LasagneConv import IBDPairConvAe, IBDPairConvAe2
+from LasagneConv import IBDChargeDenoisingConvAe
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -22,10 +23,13 @@ if __name__ == '__main__':
         help='interpret the file as input')
     gp.add_argument('-o', '--output', action='store_true',
         help='interpret the file as output')
+    parser.add_argument('--flex-color', action='store_true',
+        help='use a variable color scale per plot')
     parser.add_argument('--preprocess', default=None, choices=[
             None,
             'IBDPairConvAe',
             'IBDPairConvAe2',
+            'IBDChargeDenoisingConvAe',
         ],
         help='preprocess with the given network')
     args = parser.parse_args()
@@ -53,6 +57,11 @@ if __name__ == '__main__':
         'aspect': 'auto',
         'cmap': plt.get_cmap('PuBu')
     }
+    if not args.flex_color:
+        image_args.update({
+            'vmin': -1,
+            'vmax': 1,
+        })
     fig = plt.figure(1)
     prompt_charge_ax = plt.subplot(2, 2, 1)
     prompt_charge_im = plt.imshow(event[0], **image_args)

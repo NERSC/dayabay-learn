@@ -15,11 +15,12 @@ class IBDPairConvAe(AbstractNetwork):
     '''A convolutional autoencoder for interpreting candidate IBD pairs.'''
 
     def __init__(self, minibatch_size=128, epochs=1, learn_rate=1e-3,
-            bottleneck_width=10):
+            bottleneck_width=10, **kwargs):
         '''Initialize a ready-to-train convolutional autoencoder.'''
         super(IBDPairConvAe, self).__init__(self)
         # Shapes are given as (batch, depth, height, width)
-        self.minibatch_shape = (minibatch_size, 4, 8, 24)
+        nchannels = kwargs.get('nchannels', 4)
+        self.minibatch_shape = (minibatch_size, nchannels, 8, 24)
         self.minibatch_size = minibatch_size
         self.image_shape = self.minibatch_shape[1:-1]
         self.num_features = reduce(mul, self.image_shape)
@@ -34,38 +35,39 @@ class IBDPairConvAe(AbstractNetwork):
         self.test_cost = self._setup_cost(deterministic=True)
         self.optimizer = self._setup_optimizer()
         self.train_once = theano.function([self.input_var],
-            self.train_cost, updates=self.optimizer)
+            [self.train_cost, self.train_prediction], updates=self.optimizer)
         self.predict_fn = theano.function([self.input_var],
             [self.test_cost, self.test_prediction])
 
     def _setup_network(self):
         '''Construct the ConvAe architecture for Daya Bay IBDs.'''
+        num_filters = 128
         initial_weights = l.init.Normal(1.0/self.num_features, 0)
         # Input layer shape = (minibatch_size, 4, 8, 24)
         network = l.layers.InputLayer(
             input_var=self.input_var,
             shape=self.minibatch_shape)
-        # post-conv shape = (minibatch_size, 16, 8, 24)
+        # post-conv shape = (minibatch_size, num_filters, 8, 24)
         network = l.layers.Conv2DLayer(
             network,
-            num_filters=16,
+            num_filters=num_filters,
             filter_size=(5, 5),
             pad=(2, 2),
             W=initial_weights,
             nonlinearity=l.nonlinearities.rectify)
-        # post-pool shape = (minibatch_size, 16, 4, 12)
+        # post-pool shape = (minibatch_size, num_filters, 4, 12)
         network = l.layers.MaxPool2DLayer(
             network,
             pool_size=(2, 2))
-        # post-conv shape = (minibatch_size, 16, 4, 10)
+        # post-conv shape = (minibatch_size, num_filters, 4, 10)
         network = l.layers.Conv2DLayer(
             network,
-            num_filters=16,
+            num_filters=num_filters,
             filter_size=(3, 3),
             pad=(1, 0),
             W=initial_weights,
             nonlinearity=l.nonlinearities.rectify)
-        # post-pool shape = (minibatch_size, 16, 2, 5)
+        # post-pool shape = (minibatch_size, num_filters, 2, 5)
         network = l.layers.MaxPool2DLayer(
             network,
             pool_size=(2, 2))
@@ -78,17 +80,17 @@ class IBDPairConvAe(AbstractNetwork):
             pad=0,
             W=initial_weights,
             nonlinearity=l.nonlinearities.rectify)
-        # post-deconv shape = (minibatch_size, 16, 2, 4)
+        # post-deconv shape = (minibatch_size, num_filters, 2, 4)
         network = l.layers.Deconv2DLayer(
             network,
-            num_filters=16,
+            num_filters=num_filters,
             filter_size=(2, 4),
             stride=(2, 2),
             W=initial_weights)
-        # post-deconv shape = (minibatch_size, 16, 4, 11)
+        # post-deconv shape = (minibatch_size, num_filters, 4, 11)
         network = l.layers.Deconv2DLayer(
             network,
-            num_filters=16,
+            num_filters=num_filters,
             filter_size=(2, 5),
             stride=(2, 2),
             W=initial_weights)
@@ -141,7 +143,7 @@ class IBDPairConvAe(AbstractNetwork):
             numinputs = x.shape[0]
             indices = np.arange(numinputs)
             # Shuffle order each time a new set of minibatches is requested
-            np.random.shuffle(indices)
+            #np.random.shuffle(indices)
             # Check for the small-sample case, in which case we don't use a
             # minibatch
             if numinputs > self.minibatch_size:
@@ -161,7 +163,16 @@ class IBDPairConvAe(AbstractNetwork):
         for epoch in xrange(self.epochs):
             minibatches = self.minibatch_iterator(x_train)
             for inputs in minibatches():
-                cost = self.train_once(inputs)
+                cost, prediction = self.train_once(inputs)
+                last_inputs = inputs
+            kwargs = {
+                'cost': cost,
+                'epoch': epoch,
+                'input': last_inputs,
+                'output': prediction
+            }
+            for fn in self.epoch_loop_hooks:
+                fn(**kwargs)
             logging.info("loss after epoch %d is %f", epoch, cost)
 
     def predict(self, x, y=None):
@@ -230,3 +241,39 @@ class IBDPairConvAe2(IBDPairConvAe):
             other *= max_ - min_
             other += min_
         return repeat_transformation
+
+class IBDChargeDenoisingConvAe(IBDPairConvAe2):
+    '''A denoising CAE based on IBDPairConvAe2.'''
+    def __init__(self, *args, **kwargs):
+        '''Initialize the denoising autoencoder.'''
+        self.zero_fraction = kwargs.get('zero_fraction', 0.3)
+        self.seed = kwargs.get('seed', 498)
+        super(IBDChargeDenoisingConvAe, self).__init__(*args, nchannels=2, **kwargs)
+        self.only_charge = True
+
+    def _get_corrupt_input(self):
+        '''Set up the corrupted input variable with randomly zeroed pixels.'''
+        rng = np.random.RandomState(self.seed)
+        theano_rng = T.shared_randomstreams.RandomStreams(rng.randint(2 ** 30))
+        # each pixel in the mask has a p=1-self.zero_fraction chance of being
+        # 1, else 0
+        mask = theano_rng.binomial(size=self.input_var.shape,
+            dtype=theano.config.floatX, n=1, p=1-self.zero_fraction)
+        return mask * self.input_var
+
+    def _setup_network(self):
+        '''Set up the IBDPairConvAe2 network, but have it accept only 2 input
+        channels, and partly corrupt the input by zeroing out some of the
+        pixels.'''
+        corrupt_input_layer = l.layers.InputLayer(
+            input_var=self._get_corrupt_input(),
+            shape=self.minibatch_shape)
+
+        network = super(IBDChargeDenoisingConvAe, self)._setup_network()
+        # Reassign the first convolutional layer's input to be the new corrupt
+        # input
+        layers = l.layers.get_all_layers(network)
+        first_conv_layer = layers[1]
+        first_conv_layer.input_layer = corrupt_input_layer
+        first_conv_layer.input_shape = corrupt_input_layer.output_shape
+        return network

@@ -13,6 +13,7 @@ from sklearn.decomposition import PCA
 from vis.viz import Viz
 from util.data_loaders import load_ibd_pairs, get_ibd_data
 from networks.LasagneConv import IBDPairConvAe, IBDPairConvAe2
+from networks.LasagneConv import IBDChargeDenoisingConvAe
 import argparse
 import logging
 logging.basicConfig(format='%(levelname)s:\t%(message)s')
@@ -44,6 +45,7 @@ def setup_parser():
         choices=[
             'IBDPairConvAe',
             'IBDPairConvAe2',
+            'IBDChargeDenoisingConvAe',
         ],
         help='network to use')
     return parser
@@ -58,20 +60,44 @@ if __name__ == "__main__":
     cae = convnet_class(bottleneck_width=args.bottleneck_width,
         epochs=args.epochs, learn_rate=args.learn_rate)
     logging.info('Preprocessing data files')
-    train, val, test = get_ibd_data(tot_num_pairs=args.numpairs)
+    only_charge = getattr(cae, 'only_charge', False)
+    train, val, test = get_ibd_data(tot_num_pairs=args.numpairs,
+        just_charges=only_charge)
     preprocess = cae.preprocess_data(train)
     preprocess(val)
     preprocess(test)
 
     #uses scikit-learn interface (so this trains on X_train)
     logging.info('Training network')
+    epochs = []
+    costs = []
+    def saveprogress(**kwargs):
+        epochs.append(kwargs['epoch'])
+        costs.append(kwargs['cost'])
+    def plotcomparisons(**kwargs):
+        if kwargs['epoch'] % 10 != 0:
+            return
+        numevents = 4
+        plotargs = {
+            'interpolation': 'nearest',
+            'aspect': 'auto',
+        }
+        for i in range(numevents):
+            plt.subplot(2, numevents, i + 1)
+            plt.imshow(kwargs['input'][i, 0], **plotargs)
+            plt.title('input %d' % i)
+            plt.subplot(2, numevents, i + numevents + 1)
+            plt.imshow(kwargs['output'][i, 0], **plotargs)
+            plt.title('output %d' % i)
+        plt.savefig('results/progress/reco%d.pdf' % kwargs['epoch'])
+        plt.clf()
+    cae.epoch_loop_hooks.append(saveprogress)
+    cae.epoch_loop_hooks.append(plotcomparisons)
     cae.fit(train)
 
-    #extract the hidden layer outputs when running x_val thru autoencoder
-    logging.info('Extracting bottleneck layer')
-    feat = cae.extract_layer(val, 'bottleneck')[:, :, 0, 0]
-    logging.debug('feat.shape = %s', str(feat.shape))
-    gr_truth = np.ones(val.shape[0])
+    plt.plot(epochs, costs)
+    plt.savefig('test.pdf')
+    plt.clf()
 
     logging.info('Constructing visualization')
     v = Viz(gr_truth,nclass=1)
