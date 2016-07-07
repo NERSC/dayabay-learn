@@ -77,19 +77,27 @@ if __name__ == "__main__":
     def plotcomparisons(**kwargs):
         if kwargs['epoch'] % 10 != 0:
             return
-        plt.subplot(2, 1, 1)
-        plt.imshow(kwargs['input'][0, 0], interpolation='nearest')
-        plt.title('input')
-        plt.subplot(2, 1, 2)
-        plt.imshow(kwargs['output'][0, 0], interpolation='nearest')
-        plt.title('output')
-        plt.savefig('reco%d.pdf' % kwargs['epoch'])
+        numevents = 4
+        plotargs = {
+            'interpolation': 'nearest',
+            'aspect': 'auto',
+        }
+        for i in range(numevents):
+            plt.subplot(2, numevents, i + 1)
+            plt.imshow(kwargs['input'][i, 0], **plotargs)
+            plt.title('input %d' % i)
+            plt.subplot(2, numevents, i + numevents + 1)
+            plt.imshow(kwargs['output'][i, 0], **plotargs)
+            plt.title('output %d' % i)
+        plt.savefig('results/progress/reco%d.pdf' % kwargs['epoch'])
+        plt.clf()
     cae.epoch_loop_hooks.append(saveprogress)
     cae.epoch_loop_hooks.append(plotcomparisons)
     cae.fit(train)
 
     plt.plot(epochs, costs)
     plt.savefig('test.pdf')
+    plt.clf()
 
     logging.info('Constructing visualization')
     v = Viz(gr_truth,nclass=1)
