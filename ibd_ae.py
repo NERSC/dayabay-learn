@@ -41,6 +41,8 @@ def setup_parser():
         help='optionally save AE prediction to specified h5 file')
     parser.add_argument('-l', '--learn_rate', default=0.001, type=float,
         help='the learning rate for the network')
+    parser.add_argument('--tsne', action='save_true',
+        help='do t-SNE visualization')
     parser.add_argument('--network', default='IBDPairConvAe',
         choices=[
             'IBDPairConvAe',
@@ -99,18 +101,19 @@ if __name__ == "__main__":
     plt.savefig('test.pdf')
     plt.clf()
 
-    logging.info('Constructing visualization')
-    v = Viz(gr_truth,nclass=1)
+    if args.tsne:
+        logging.info('Constructing visualization')
+        v = Viz(gr_truth,nclass=1)
 
-    # take first two principal components of features, so we can plot easily
-    #normally we would do t-SNE (but takes too long for quick demo)
-    #x_pc = v.get_pca(feat)
+        # take first two principal components of features, so we can plot easily
+        #normally we would do t-SNE (but takes too long for quick demo)
+        #x_pc = v.get_pca(feat)
 
-    num_feats = 500 if feat.shape[0] > 500 else feat.shape[0]
-    x_ts = v.get_tsne(feat[:num_feats])
+        num_feats = 500 if feat.shape[0] > 500 else feat.shape[0]
+        x_ts = v.get_tsne(feat[:num_feats])
 
-    #plot the 2D-projection of the features
-    v.plot_features(x_ts,save=True)
+        #plot the 2D-projection of the features
+        v.plot_features(x_ts,save=True)
 
     if args.output is not None:
         logging.info('Saving autoencoder output')
