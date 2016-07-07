@@ -46,3 +46,11 @@ class AbstractNetwork(object):
     def preprocess_data(self, x):
         '''get data ready to go into the network'''
         raise NotImplemented()
+
+    def save(self, filename):
+        '''save a representation of the network to disk'''
+        raise NotImplemented()
+
+    def load(self, filename):
+        '''load a representation of the network from disk'''
+        raise NotImplemented()
