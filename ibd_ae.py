@@ -17,7 +17,6 @@ from networks.LasagneConv import IBDChargeDenoisingConvAe
 import argparse
 import logging
 logging.basicConfig(format='%(levelname)s:\t%(message)s')
-logging.getLogger().setLevel(logging.DEBUG)
 
 
 
@@ -48,6 +47,8 @@ def setup_parser():
         help='the learning rate for the network')
     parser.add_argument('--tsne', action='store_true',
         help='do t-SNE visualization')
+    parser.add_argument('-v', '--verbose', default=0, action='count',
+        help='default:quiet, 1:log_info, 2:+=plots, 3:+=log_debug')
     parser.add_argument('--network', default='IBDPairConvAe',
         choices=[
             'IBDPairConvAe',
@@ -60,6 +61,18 @@ def setup_parser():
 if __name__ == "__main__":
     parser = setup_parser()
     args = parser.parse_args()
+
+    make_progress_plots = False
+    if args.verbose == 0:
+        pass
+    elif args.verbose == 1:
+        logging.getLogger().setLevel(logging.INFO)
+    elif args.verbose == 2:
+        logging.getLogger().setLevel(logging.INFO)
+        make_progress_plots = True
+    else:
+        logging.getLogger().setLevel(logging.DEBUG)
+        make_progress_plots = True
 
     #class for networks architecture
     logging.info('Constructing untrained ConvNet of class %s', args.network)
@@ -104,8 +117,9 @@ if __name__ == "__main__":
         logging.debug('Loss after epoch %d is %f', kwargs['epoch'],
             kwargs['cost'])
     cae.epoch_loop_hooks.append(log_message_cost)
-    cae.epoch_loop_hooks.append(saveprogress)
-    cae.epoch_loop_hooks.append(plotcomparisons)
+    if make_progress_plots:
+        cae.epoch_loop_hooks.append(saveprogress)
+        cae.epoch_loop_hooks.append(plotcomparisons)
     logging.info('Training network with %d samples', train.shape[0])
     cae.fit(train)
 
