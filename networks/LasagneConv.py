@@ -41,32 +41,33 @@ class IBDPairConvAe(AbstractNetwork):
 
     def _setup_network(self):
         '''Construct the ConvAe architecture for Daya Bay IBDs.'''
+        num_filters = 128
         initial_weights = l.init.Normal(1.0/self.num_features, 0)
         # Input layer shape = (minibatch_size, 4, 8, 24)
         network = l.layers.InputLayer(
             input_var=self.input_var,
             shape=self.minibatch_shape)
-        # post-conv shape = (minibatch_size, 16, 8, 24)
+        # post-conv shape = (minibatch_size, num_filters, 8, 24)
         network = l.layers.Conv2DLayer(
             network,
-            num_filters=16,
+            num_filters=num_filters,
             filter_size=(5, 5),
             pad=(2, 2),
             W=initial_weights,
             nonlinearity=l.nonlinearities.rectify)
-        # post-pool shape = (minibatch_size, 16, 4, 12)
+        # post-pool shape = (minibatch_size, num_filters, 4, 12)
         network = l.layers.MaxPool2DLayer(
             network,
             pool_size=(2, 2))
-        # post-conv shape = (minibatch_size, 16, 4, 10)
+        # post-conv shape = (minibatch_size, num_filters, 4, 10)
         network = l.layers.Conv2DLayer(
             network,
-            num_filters=16,
+            num_filters=num_filters,
             filter_size=(3, 3),
             pad=(1, 0),
             W=initial_weights,
             nonlinearity=l.nonlinearities.rectify)
-        # post-pool shape = (minibatch_size, 16, 2, 5)
+        # post-pool shape = (minibatch_size, num_filters, 2, 5)
         network = l.layers.MaxPool2DLayer(
             network,
             pool_size=(2, 2))
@@ -79,17 +80,17 @@ class IBDPairConvAe(AbstractNetwork):
             pad=0,
             W=initial_weights,
             nonlinearity=l.nonlinearities.rectify)
-        # post-deconv shape = (minibatch_size, 16, 2, 4)
+        # post-deconv shape = (minibatch_size, num_filters, 2, 4)
         network = l.layers.Deconv2DLayer(
             network,
-            num_filters=16,
+            num_filters=num_filters,
             filter_size=(2, 4),
             stride=(2, 2),
             W=initial_weights)
-        # post-deconv shape = (minibatch_size, 16, 4, 11)
+        # post-deconv shape = (minibatch_size, num_filters, 4, 11)
         network = l.layers.Deconv2DLayer(
             network,
-            num_filters=16,
+            num_filters=num_filters,
             filter_size=(2, 5),
             stride=(2, 2),
             W=initial_weights)
