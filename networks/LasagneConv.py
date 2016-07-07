@@ -35,7 +35,7 @@ class IBDPairConvAe(AbstractNetwork):
         self.test_cost = self._setup_cost(deterministic=True)
         self.optimizer = self._setup_optimizer()
         self.train_once = theano.function([self.input_var],
-            self.train_cost, updates=self.optimizer)
+            [self.train_cost, self.train_prediction], updates=self.optimizer)
         self.predict_fn = theano.function([self.input_var],
             [self.test_cost, self.test_prediction])
 
@@ -142,7 +142,7 @@ class IBDPairConvAe(AbstractNetwork):
             numinputs = x.shape[0]
             indices = np.arange(numinputs)
             # Shuffle order each time a new set of minibatches is requested
-            np.random.shuffle(indices)
+            #np.random.shuffle(indices)
             # Check for the small-sample case, in which case we don't use a
             # minibatch
             if numinputs > self.minibatch_size:
@@ -162,9 +162,16 @@ class IBDPairConvAe(AbstractNetwork):
         for epoch in xrange(self.epochs):
             minibatches = self.minibatch_iterator(x_train)
             for inputs in minibatches():
-                cost = self.train_once(inputs)
-                for fn in self.train_loop_hooks:
-                    fn(epoch, cost)
+                cost, prediction = self.train_once(inputs)
+                last_inputs = inputs
+            kwargs = {
+                'cost': cost,
+                'epoch': epoch,
+                'input': last_inputs,
+                'output': prediction
+            }
+            for fn in self.epoch_loop_hooks:
+                fn(**kwargs)
             logging.info("loss after epoch %d is %f", epoch, cost)
 
     def predict(self, x, y=None):

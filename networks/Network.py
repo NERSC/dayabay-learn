@@ -14,7 +14,18 @@ class AbstractNetwork(object):
         self.train_cost = None
         self.test_cost = None
         self.optimizer = None
-        self.train_loop_hooks = []
+        self.epoch_loop_hooks = []
+        '''This list of functions is called after each epoch is run.
+        
+           The functions will be called in the order they appear in the list.
+           Each function should have a signature of (**kwargs). The provided
+           arguments will be included:
+           
+             - 'cost': the cost
+             - 'epoch': the epoch number
+             - 'input': the input minibatch
+             - 'output': the reconstructed minibatch
+        '''
 
     def fit(self, x_train, y_train):
         '''train network'''

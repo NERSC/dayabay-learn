@@ -71,10 +71,21 @@ if __name__ == "__main__":
     logging.info('Training network')
     epochs = []
     costs = []
-    def saveprogress(epoch, cost):
-        epochs.append(epoch)
-        costs.append(cost)
-    cae.train_loop_hooks.append(saveprogress)
+    def saveprogress(**kwargs):
+        epochs.append(kwargs['epoch'])
+        costs.append(kwargs['cost'])
+    def plotcomparisons(**kwargs):
+        if kwargs['epoch'] % 10 != 0:
+            return
+        plt.subplot(2, 1, 1)
+        plt.imshow(kwargs['input'][0, 0], interpolation='nearest')
+        plt.title('input')
+        plt.subplot(2, 1, 2)
+        plt.imshow(kwargs['output'][0, 0], interpolation='nearest')
+        plt.title('output')
+        plt.savefig('reco%d.pdf' % kwargs['epoch'])
+    cae.epoch_loop_hooks.append(saveprogress)
+    cae.epoch_loop_hooks.append(plotcomparisons)
     cae.fit(train)
 
     plt.plot(epochs, costs)
