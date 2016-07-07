@@ -11,6 +11,7 @@ sys.path.append(os.path.abspath('../util'))
 sys.path.append(os.path.abspath('../networks'))
 from data_loaders import load_ibd_pairs, load_predictions
 from LasagneConv import IBDPairConvAe, IBDPairConvAe2
+from LasagneConv import IBDChargeDenoisingConvAe
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -28,6 +29,7 @@ if __name__ == '__main__':
             None,
             'IBDPairConvAe',
             'IBDPairConvAe2',
+            'IBDChargeDenoisingConvAe',
         ],
         help='preprocess with the given network')
     args = parser.parse_args()

@@ -13,6 +13,7 @@ from sklearn.decomposition import PCA
 from vis.viz import Viz
 from util.data_loaders import load_ibd_pairs, get_ibd_data
 from networks.LasagneConv import IBDPairConvAe, IBDPairConvAe2
+from networks.LasagneConv import IBDChargeDenoisingConvAe
 import argparse
 import logging
 logging.basicConfig(format='%(levelname)s:\t%(message)s')
@@ -44,6 +45,7 @@ def setup_parser():
         choices=[
             'IBDPairConvAe',
             'IBDPairConvAe2',
+            'IBDChargeDenoisingConvAe',
         ],
         help='network to use')
     return parser
@@ -58,7 +60,9 @@ if __name__ == "__main__":
     cae = convnet_class(bottleneck_width=args.bottleneck_width,
         epochs=args.epochs, learn_rate=args.learn_rate)
     logging.info('Preprocessing data files')
-    train, val, test = get_ibd_data(tot_num_pairs=args.numpairs)
+    only_charge = getattr(cae, 'only_charge', False)
+    train, val, test = get_ibd_data(tot_num_pairs=args.numpairs,
+        just_charges=only_charge)
     preprocess = cae.preprocess_data(train)
     preprocess(val)
     preprocess(test)
