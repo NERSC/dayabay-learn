@@ -208,6 +208,19 @@ class IBDPairConvAe(AbstractNetwork):
             other /= stds/std
         return repeat_transformation
 
+    def save(self, filename):
+        params = l.layers.get_all_param_values(self.network)
+        np.savez(filename, *params)
+
+    def load(self, filename):
+        with np.load(filename) as param_data:
+            params = []
+            name_prefix = 'arr_'
+            for i in xrange(len(param_data.files)):
+                name = '%s%d' % (name_prefix, i)
+                params.append(param_data[name])
+            l.layers.set_all_param_values(self.network, params)
+
 
 class IBDPairConvAe2(IBDPairConvAe):
     '''A CAE based on IBDPairConvAe that scales input and output to be between

@@ -37,8 +37,12 @@ def setup_parser():
         help='number of features in the bottleneck layer')
     parser.add_argument('-n', '--numpairs', type=int, default=-1,
         help='number of IBD pairs to use')
-    parser.add_argument('-o', '--output', default=None,
+    parser.add_argument('-p', '--save-prediction', default=None,
         help='optionally save AE prediction to specified h5 file')
+    parser.add_argument('-s', '--save-model', default=None,
+        help='optionally save the trained model parameters')
+    parser.add_argument('-m', '--load-model', default=None,
+        help='optionally load a previously saved set of model parameters')
     parser.add_argument('-l', '--learn_rate', default=0.001, type=float,
         help='the learning rate for the network')
     parser.add_argument('--tsne', action='save_true',
@@ -61,6 +65,9 @@ if __name__ == "__main__":
     convnet_class = eval(args.network)
     cae = convnet_class(bottleneck_width=args.bottleneck_width,
         epochs=args.epochs, learn_rate=args.learn_rate)
+    if args.load_model:
+        logging.info('Loading model parameters from file %s', args.load_model)
+        cae.load(args.load_model)
     logging.info('Preprocessing data files')
     only_charge = getattr(cae, 'only_charge', False)
     train, val, test = get_ibd_data(tot_num_pairs=args.numpairs,
@@ -97,6 +104,10 @@ if __name__ == "__main__":
     cae.epoch_loop_hooks.append(plotcomparisons)
     cae.fit(train)
 
+    if args.save_model:
+        logging.info('Saving model parameters to %s', args.save_model)
+        cae.save(args.save_model)
+
     plt.plot(epochs, costs)
     plt.savefig('test.pdf')
     plt.clf()
@@ -115,7 +126,7 @@ if __name__ == "__main__":
         #plot the 2D-projection of the features
         v.plot_features(x_ts,save=True)
 
-    if args.output is not None:
+    if args.save_prediction is not None:
         logging.info('Saving autoencoder output')
         outdata = np.vstack((cae.predict(train)[1], cae.predict(val)[1],
             cae.predict(test)[1]))
