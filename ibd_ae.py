@@ -45,7 +45,7 @@ def setup_parser():
         help='optionally load a previously saved set of model parameters')
     parser.add_argument('-l', '--learn_rate', default=0.001, type=float,
         help='the learning rate for the network')
-    parser.add_argument('--tsne', action='save_true',
+    parser.add_argument('--tsne', action='store_true',
         help='do t-SNE visualization')
     parser.add_argument('--network', default='IBDPairConvAe',
         choices=[
