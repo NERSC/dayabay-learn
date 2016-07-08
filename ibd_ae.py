@@ -128,7 +128,7 @@ if __name__ == "__main__":
         cae.save(args.save_model)
 
     plt.plot(epochs, costs)
-    plt.savefig('test.pdf')
+    plt.savefig('results/progress/cost.pdf')
     plt.clf()
 
     if args.tsne:
