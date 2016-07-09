@@ -92,6 +92,7 @@ specified by user) is set to 0.
 
  - Input layer changes:
     - The input to the network is a partially corrupted version. For each IBD
-      pair, randomly select a fraction p of the pixels, and set them to 0.
+      pair and a given corruption probability *p*, assign each pixel to be 0
+      with probability *p* (or its uncorrupted value with probability 1-*p*).
       *Note*: the training cost still compares the network's output to the
       uncorrupted input.
