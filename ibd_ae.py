@@ -106,10 +106,10 @@ if __name__ == "__main__":
         }
         for i in range(numevents):
             plt.subplot(2, numevents, i + 1)
-            plt.imshow(kwargs['input'][i, 0], **plotargs)
+            plt.imshow(kwargs['input'][i, 0].T, **plotargs)
             plt.title('input %d' % i)
             plt.subplot(2, numevents, i + numevents + 1)
-            plt.imshow(kwargs['output'][i, 0], **plotargs)
+            plt.imshow(kwargs['output'][i, 0].T, **plotargs)
             plt.title('output %d' % i)
         plt.savefig('results/progress/reco%d.pdf' % kwargs['epoch'])
         plt.clf()
