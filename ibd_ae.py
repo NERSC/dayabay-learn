@@ -38,9 +38,11 @@ def setup_parser():
     parser.add_argument('-n', '--numpairs', type=int, default=-1,
         help='number of IBD pairs to use')
     parser.add_argument('-p', '--save-prediction', default=None,
-        help='optionally save AE prediction to specified h5 file')
+        help=('optionally save AE prediction to specified h5' +
+        ' file (relative to --out-dir'))
     parser.add_argument('-s', '--save-model', default=None,
-        help='optionally save the trained model parameters')
+        help=('optionally save the trained model parameters to the ' +
+        'specified file (relative to --out-dir)'))
     parser.add_argument('-m', '--load-model', default=None,
         help='optionally load a previously saved set of model parameters')
     parser.add_argument('-l', '--learn_rate', default=0.001, type=float,
@@ -49,6 +51,8 @@ def setup_parser():
         help='do t-SNE visualization')
     parser.add_argument('-v', '--verbose', default=0, action='count',
         help='default:quiet, 1:log_info, 2:+=plots, 3:+=log_debug')
+    parser.add_argument('--out-dir', default='.',
+        help='directory to save all files that may be requested')
     parser.add_argument('--network', default='IBDPairConvAe',
         choices=[
             'IBDPairConvAe',
@@ -111,7 +115,9 @@ if __name__ == "__main__":
             plt.subplot(2, numevents, i + numevents + 1)
             plt.imshow(kwargs['output'][i, 0].T, **plotargs)
             plt.title('output %d' % i)
-        plt.savefig('results/progress/reco%d.pdf' % kwargs['epoch'])
+        plt.savefig(os.path.join(
+            args.out_dir,
+            'reco%d.pdf' % kwargs['epoch']))
         plt.clf()
     def log_message_cost(**kwargs):
         logging.debug('Loss after epoch %d is %f', kwargs['epoch'],
@@ -125,10 +131,10 @@ if __name__ == "__main__":
 
     if args.save_model:
         logging.info('Saving model parameters to %s', args.save_model)
-        cae.save(args.save_model)
+        cae.save(os.path.join(args.out_dir, args.save_model))
 
     plt.plot(epochs, costs)
-    plt.savefig('results/progress/cost.pdf')
+    plt.savefig(os.path.join(args.out_dir, 'cost.pdf'))
     plt.clf()
 
     if args.tsne:
@@ -149,8 +155,7 @@ if __name__ == "__main__":
         logging.info('Saving autoencoder output')
         outdata = np.vstack((cae.predict(train)[1], cae.predict(val)[1],
             cae.predict(test)[1]))
-        filename = args.output
+        filename = os.path.join(args.out_dir, args.save_prediction)
         outfile = h5py.File(filename, 'w')
         outdset = outfile.create_dataset("ibd_pair_predictions", data=outdata,
             compression="gzip", chunks=True)
-
