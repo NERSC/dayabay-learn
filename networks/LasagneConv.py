@@ -160,7 +160,7 @@ class IBDPairConvAe(AbstractNetwork):
         for epoch in xrange(self.epochs):
             minibatches = self.minibatch_iterator(x_train)
             for inputs in minibatches():
-                cost = self.train_once(inputs)
+                cost = self.train_once(inputs)[0]
             kwargs = {
                 'cost': cost,
                 'epoch': epoch,
