@@ -100,10 +100,17 @@ if __name__ == "__main__":
     def saveprogress(**kwargs):
         epochs.append(kwargs['epoch'])
         costs.append(kwargs['cost'])
-    def plotcomparisons(**kwargs):
-        if kwargs['epoch'] % 10 != 0:
+        plt.plot(epochs, costs)
+        plt.savefig(os.path.join(args.out_dir, 'cost.pdf'))
+        plt.clf()
+    def saveparameters(**kwargs):
+        if kwargs['epoch'] % 2 != 1:
             return
-        numevents = 4
+        cae.save(os.path.join(args.out_dir, args.save_model))
+    def plotcomparisons(**kwargs):
+        if kwargs['epoch'] % 2 != 1:
+            return
+        numevents = 6
         plotargs = {
             'interpolation': 'nearest',
             'aspect': 'auto',
@@ -126,16 +133,11 @@ if __name__ == "__main__":
     if make_progress_plots:
         cae.epoch_loop_hooks.append(saveprogress)
         cae.epoch_loop_hooks.append(plotcomparisons)
+    if args.save_model:
+        cae.epoch_loop_hooks.append(saveparameters)
     logging.info('Training network with %d samples', train.shape[0])
     cae.fit(train)
 
-    if args.save_model:
-        logging.info('Saving model parameters to %s', args.save_model)
-        cae.save(os.path.join(args.out_dir, args.save_model))
-
-    plt.plot(epochs, costs)
-    plt.savefig(os.path.join(args.out_dir, 'cost.pdf'))
-    plt.clf()
 
     if args.tsne:
         logging.info('Constructing visualization')
