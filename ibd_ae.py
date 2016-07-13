@@ -53,6 +53,8 @@ def setup_parser():
         help='default:quiet, 1:log_info, 2:+=plots, 3:+=log_debug')
     parser.add_argument('--out-dir', default='.',
         help='directory to save all files that may be requested')
+    parser.add_argument('--save-interval', default=10, type=int,
+        help='number of epochs between saving intermediate outputs')
     parser.add_argument('--network', default='IBDPairConvAe',
         choices=[
             'IBDPairConvAe',
@@ -94,22 +96,36 @@ if __name__ == "__main__":
     preprocess(val)
     preprocess(test)
 
+    # set up a decorator to only run the function if the epoch is at the
+    # appropriate value (usually == 0 (mod 10) or some such thing)
+    def only_on_some_epochs(f):
+        def wrapper(*arglist, **kwargs):
+            if kwargs['epoch'] % args.save_interval == args.save_interval - 1:
+                return f(*arglist, **kwargs)
+            else:
+                return
+        return wrapper
+
     #uses scikit-learn interface (so this trains on X_train)
     epochs = []
     costs = []
-    def saveprogress(**kwargs):
+    def record_cost_curve(**kwargs):
         epochs.append(kwargs['epoch'])
         costs.append(kwargs['cost'])
+
+    @only_on_some_epochs
+    def plot_cost_curve(**kwargs):
         plt.plot(epochs, costs)
         plt.savefig(os.path.join(args.out_dir, 'cost.pdf'))
         plt.clf()
+
+    @only_on_some_epochs
     def saveparameters(**kwargs):
-        if kwargs['epoch'] % 2 != 1:
-            return
-        cae.save(os.path.join(args.out_dir, args.save_model))
+        cae.save(os.path.join(args.out_dir, args.save_model +
+            str(kwargs['epoch'])))
+
+    @only_on_some_epochs
     def plotcomparisons(**kwargs):
-        if kwargs['epoch'] % 2 != 1:
-            return
         numevents = 6
         plotargs = {
             'interpolation': 'nearest',
@@ -126,12 +142,14 @@ if __name__ == "__main__":
             args.out_dir,
             'reco%d.pdf' % kwargs['epoch']))
         plt.clf()
+
     def log_message_cost(**kwargs):
         logging.debug('Loss after epoch %d is %f', kwargs['epoch'],
             kwargs['cost'])
     cae.epoch_loop_hooks.append(log_message_cost)
     if make_progress_plots:
-        cae.epoch_loop_hooks.append(saveprogress)
+        cae.epoch_loop_hooks.append(record_cost_curve)
+        cae.epoch_loop_hooks.append(plot_cost_curve)
         cae.epoch_loop_hooks.append(plotcomparisons)
     if args.save_model:
         cae.epoch_loop_hooks.append(saveparameters)
