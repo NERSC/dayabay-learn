@@ -44,10 +44,12 @@ class IBDPairConvAe(AbstractNetwork):
         # Input layer shape = (minibatch_size, 4, 8, 24)
         network = l.layers.InputLayer(
             input_var=self.input_var,
+            name='input',
             shape=self.minibatch_shape)
         # post-conv shape = (minibatch_size, num_filters, 8, 24)
         network = l.layers.Conv2DLayer(
             network,
+            name='conv1',
             num_filters=num_filters,
             filter_size=(5, 5),
             pad=(2, 2),
@@ -56,10 +58,12 @@ class IBDPairConvAe(AbstractNetwork):
         # post-pool shape = (minibatch_size, num_filters, 4, 12)
         network = l.layers.MaxPool2DLayer(
             network,
+            name='pool1',
             pool_size=(2, 2))
         # post-conv shape = (minibatch_size, num_filters, 4, 10)
         network = l.layers.Conv2DLayer(
             network,
+            name='conv2',
             num_filters=num_filters,
             filter_size=(3, 3),
             pad=(1, 0),
@@ -68,6 +72,7 @@ class IBDPairConvAe(AbstractNetwork):
         # post-pool shape = (minibatch_size, num_filters, 2, 5)
         network = l.layers.MaxPool2DLayer(
             network,
+            name='pool2',
             pool_size=(2, 2))
         # post-conv shape = (minibatch_size, bottleneck_width, 1, 1)
         network = l.layers.Conv2DLayer(
@@ -81,6 +86,7 @@ class IBDPairConvAe(AbstractNetwork):
         # post-deconv shape = (minibatch_size, num_filters, 2, 4)
         network = l.layers.Deconv2DLayer(
             network,
+            name='deconv1',
             num_filters=num_filters,
             filter_size=(2, 4),
             stride=(2, 2),
@@ -88,6 +94,7 @@ class IBDPairConvAe(AbstractNetwork):
         # post-deconv shape = (minibatch_size, num_filters, 4, 11)
         network = l.layers.Deconv2DLayer(
             network,
+            name='deconv2',
             num_filters=num_filters,
             filter_size=(2, 5),
             stride=(2, 2),
@@ -95,6 +102,7 @@ class IBDPairConvAe(AbstractNetwork):
         # post-deconv shape = (minibatch_size, input_depth, 8, 24)
         network = l.layers.Deconv2DLayer(
             network,
+            name='deconv3',
             num_filters=self.image_shape[0],
             filter_size=(2, 4),
             stride=(2, 2),
