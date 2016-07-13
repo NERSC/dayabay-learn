@@ -15,6 +15,7 @@ class AbstractNetwork(object):
         self.test_cost = None
         self.optimizer = None
         self.epoch_loop_hooks = []
+        self.num_examples = 100
         '''This list of functions is called after each epoch is run.
         
            The functions will be called in the order they appear in the list.
@@ -23,8 +24,8 @@ class AbstractNetwork(object):
            
              - 'cost': the cost
              - 'epoch': the epoch number
-             - 'input': the input minibatch
-             - 'output': the reconstructed minibatch
+             - 'input': an input sample of length self.num_examples
+             - 'output': the network's output for the input sample
         '''
 
     def fit(self, x_train, y_train):
@@ -45,4 +46,12 @@ class AbstractNetwork(object):
 
     def preprocess_data(self, x):
         '''get data ready to go into the network'''
+        raise NotImplemented()
+
+    def save(self, filename):
+        '''save a representation of the network to disk'''
+        raise NotImplemented()
+
+    def load(self, filename):
+        '''load a representation of the network from disk'''
         raise NotImplemented()

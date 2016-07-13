@@ -5,8 +5,6 @@ import theano
 import theano.tensor as T
 import lasagne as l
 from operator import mul
-import logging
-logging.getLogger().setLevel(logging.DEBUG)
 
 from Network import AbstractNetwork
 import preprocessing
@@ -35,7 +33,7 @@ class IBDPairConvAe(AbstractNetwork):
         self.test_cost = self._setup_cost(deterministic=True)
         self.optimizer = self._setup_optimizer()
         self.train_once = theano.function([self.input_var],
-            [self.train_cost, self.train_prediction], updates=self.optimizer)
+            [self.train_cost], updates=self.optimizer)
         self.predict_fn = theano.function([self.input_var],
             [self.test_cost, self.test_prediction])
 
@@ -143,7 +141,7 @@ class IBDPairConvAe(AbstractNetwork):
             numinputs = x.shape[0]
             indices = np.arange(numinputs)
             # Shuffle order each time a new set of minibatches is requested
-            #np.random.shuffle(indices)
+            np.random.shuffle(indices)
             # Check for the small-sample case, in which case we don't use a
             # minibatch
             if numinputs > self.minibatch_size:
@@ -159,21 +157,18 @@ class IBDPairConvAe(AbstractNetwork):
         '''Fit and train the autoencoder to the x_train data.'''
         if y_train is not None:
             raise ValueError("We don't need labels here")
-        logging.info("Training with %d training samples" % x_train.shape[0])
         for epoch in xrange(self.epochs):
             minibatches = self.minibatch_iterator(x_train)
             for inputs in minibatches():
-                cost, prediction = self.train_once(inputs)
-                last_inputs = inputs
+                cost = self.train_once(inputs)[0]
             kwargs = {
                 'cost': cost,
                 'epoch': epoch,
-                'input': last_inputs,
-                'output': prediction
+                'input': x_train[:self.num_examples],
+                'output': self.predict_fn(x_train[:self.num_examples])[1]
             }
             for fn in self.epoch_loop_hooks:
                 fn(**kwargs)
-            logging.info("loss after epoch %d is %f", epoch, cost)
 
     def predict(self, x, y=None):
         '''Predict the autoencoded image without training.'''
@@ -207,6 +202,19 @@ class IBDPairConvAe(AbstractNetwork):
             other -= means
             other /= stds/std
         return repeat_transformation
+
+    def save(self, filename):
+        params = l.layers.get_all_param_values(self.network)
+        np.savez(filename, *params)
+
+    def load(self, filename):
+        with np.load(filename) as param_data:
+            params = []
+            name_prefix = 'arr_'
+            for i in xrange(len(param_data.files)):
+                name = '%s%d' % (name_prefix, i)
+                params.append(param_data[name])
+            l.layers.set_all_param_values(self.network, params)
 
 
 class IBDPairConvAe2(IBDPairConvAe):

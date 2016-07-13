@@ -3,3 +3,7 @@
 *.swp
 *.h5
 results
+# Ignore everything in batch log and tmp except for .gitkeep
+batch/logs/*
+batch/tmp_output/*
+!.gitkeep

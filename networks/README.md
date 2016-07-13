@@ -77,3 +77,22 @@ deconvolutional layer.
       +1. This is instead of rescaling so that the standard deviation is 1.
  - Final deconvolutional layer changes:
     - Tanh activation
+
+IBDChargeDenoisingConvAe
+-----------
+
+This denoising convolutional autoencoder is based on
+[IBDPairConvAe2](https://github.com/NERSC/dayabay-learn/tree/master/networks#ibdpairconvae2).
+It is identical in all respects except for the denoising: before the input is
+fed to the network, a random selection of its pixels (per IBD pair, fraction
+specified by user) is set to 0.
+
+ - File:
+[LasagneConv.py](https://github.com/NERSC/dayabay-learn/blob/master/networks/LasagneConv.py)
+
+ - Input layer changes:
+    - The input to the network is a partially corrupted version. For each IBD
+      pair and a given corruption probability *p*, assign each pixel to be 0
+      with probability *p* (or its uncorrupted value with probability 1-*p*).
+      *Note*: the training cost still compares the network's output to the
+      uncorrupted input.
