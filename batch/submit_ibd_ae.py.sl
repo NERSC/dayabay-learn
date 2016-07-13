@@ -3,9 +3,9 @@
 # This script will submit a NN training job to the "shared" partition where 1
 # core can be requested
 
-#SBATCH -p debug
+#SBATCH -p regular
 #SBATCH -N 1
-#SBATCH -t 00:05:00
+#SBATCH -t 00:15:00
 #SBATCH -J train_dca
 #SBATCH -A dasrepo
 #SBATCH -L project
