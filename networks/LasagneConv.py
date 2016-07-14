@@ -193,14 +193,21 @@ class IBDPairConvAe(AbstractNetwork):
 
     def extract_layer(self, data, layer):
         '''Extract the output of the given layer.'''
+        lasagne_layer = self._get_layer_named(layer)
+        output = l.layers.get_output(lasagne_layer)
+        out_fn = theano.function([self.input_var], output)
+        return out_fn(data)
+
+    def _get_layer_named(self, name):
+        '''Get the Lasagne layer object with the given name located in
+        self.network.'''
+
         all_layers = l.layers.get_all_layers(self.network)
-        # find the layer named with the value of layer
         for one_layer in all_layers:
-            if one_layer.name == layer:
-                output = l.layers.get_output(one_layer)
-                out_fn = theano.function([self.input_var], output)
-                return out_fn(data)
-        raise ValueError('"%s" is not a layer in our network' % layer)
+            if one_layer.name == name:
+                return one_layer
+        raise ValueError('"%s" is not a layer in our network' % name)
+
 
     def preprocess_data(self, x, y=None):
         '''Prepare the data for the neural network.
