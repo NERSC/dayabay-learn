@@ -42,10 +42,13 @@ def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, tot_num_pairs=-1):
 
 
 def get_ibd_data(path_prefix="/project/projectdirs/dasrepo/ibd_pairs", preprocess=False, mode='normalize',
-                tot_num_pairs=-1, just_charges=False):
+                tot_num_pairs=-1, just_charges=False, train_frac=0.5,
+                valid_frac=0.25):
     
     h5filename = "all_pairs.h5"
-    train, val, test = load_ibd_pairs(path=os.path.join(path_prefix, h5filename), tot_num_pairs=tot_num_pairs)
+    train, val, test = load_ibd_pairs(path=os.path.join(path_prefix,
+        h5filename), tot_num_pairs=tot_num_pairs, train_frac=train_frac,
+        valid_frac=valid_frac)
     #would be nice to optionally preprocess upon loading (mostly for unit testing)
     if just_charges:
         train = train[:,[0,2]]

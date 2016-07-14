@@ -31,13 +31,13 @@ performed, etc.
       channel's standard deviation (over all events) is 1
  - Layers:
     - Convolutional layer:
-        - 16 filters
+        - 128 filters
         - (5, 5) filter size
         - (2, 2) padding
         - ReLU activation
     - Max pool layer: (2, 2) pool size
     - Convolutional layer:
-        - 16 filters
+        - 128 filters
         - (3, 3) filter size
         - (1, 0) padding
         - ReLU activation
@@ -48,11 +48,11 @@ performed, etc.
         - (0, 0) padding
         - ReLU activation
     - Deconvolutional layer:
-        - 16 filters
+        - 128 filters
         - (2, 4) filter size
         - (2, 2) stride
     - Deconvolutional layer:
-        - 16 filters
+        - 128 filters
         - (2, 5) filter size
         - (2, 2) stride
     - Deconvolutional layer:

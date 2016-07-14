@@ -39,15 +39,24 @@ class IBDPairConvAe(AbstractNetwork):
 
     def _setup_network(self):
         '''Construct the ConvAe architecture for Daya Bay IBDs.'''
-        num_filters = 128
-        initial_weights = l.init.Normal(1.0/self.num_features, 0)
         # Input layer shape = (minibatch_size, 4, 8, 24)
         network = l.layers.InputLayer(
             input_var=self.input_var,
+            name='input',
             shape=self.minibatch_shape)
+        network = self._default_network_with_input(network)
+        return network
+
+    def _default_network_with_input(self, incoming):
+        '''Add on the default/standard conv/bottleneck/deconv layers to the
+        specified incoming network'''
+        num_filters = 128
+        initial_weights = l.init.Normal(1.0/self.num_features, 0)
+        network = incoming
         # post-conv shape = (minibatch_size, num_filters, 8, 24)
         network = l.layers.Conv2DLayer(
             network,
+            name='conv1',
             num_filters=num_filters,
             filter_size=(5, 5),
             pad=(2, 2),
@@ -56,10 +65,12 @@ class IBDPairConvAe(AbstractNetwork):
         # post-pool shape = (minibatch_size, num_filters, 4, 12)
         network = l.layers.MaxPool2DLayer(
             network,
+            name='pool1',
             pool_size=(2, 2))
         # post-conv shape = (minibatch_size, num_filters, 4, 10)
         network = l.layers.Conv2DLayer(
             network,
+            name='conv2',
             num_filters=num_filters,
             filter_size=(3, 3),
             pad=(1, 0),
@@ -68,6 +79,7 @@ class IBDPairConvAe(AbstractNetwork):
         # post-pool shape = (minibatch_size, num_filters, 2, 5)
         network = l.layers.MaxPool2DLayer(
             network,
+            name='pool2',
             pool_size=(2, 2))
         # post-conv shape = (minibatch_size, bottleneck_width, 1, 1)
         network = l.layers.Conv2DLayer(
@@ -81,6 +93,7 @@ class IBDPairConvAe(AbstractNetwork):
         # post-deconv shape = (minibatch_size, num_filters, 2, 4)
         network = l.layers.Deconv2DLayer(
             network,
+            name='deconv1',
             num_filters=num_filters,
             filter_size=(2, 4),
             stride=(2, 2),
@@ -88,6 +101,7 @@ class IBDPairConvAe(AbstractNetwork):
         # post-deconv shape = (minibatch_size, num_filters, 4, 11)
         network = l.layers.Deconv2DLayer(
             network,
+            name='deconv2',
             num_filters=num_filters,
             filter_size=(2, 5),
             stride=(2, 2),
@@ -95,6 +109,7 @@ class IBDPairConvAe(AbstractNetwork):
         # post-deconv shape = (minibatch_size, input_depth, 8, 24)
         network = l.layers.Deconv2DLayer(
             network,
+            name='deconv3',
             num_filters=self.image_shape[0],
             filter_size=(2, 4),
             stride=(2, 2),
@@ -178,14 +193,21 @@ class IBDPairConvAe(AbstractNetwork):
 
     def extract_layer(self, data, layer):
         '''Extract the output of the given layer.'''
+        lasagne_layer = self._get_layer_named(layer)
+        output = l.layers.get_output(lasagne_layer)
+        out_fn = theano.function([self.input_var], output)
+        return out_fn(data)
+
+    def _get_layer_named(self, name):
+        '''Get the Lasagne layer object with the given name located in
+        self.network.'''
+
         all_layers = l.layers.get_all_layers(self.network)
-        # find the layer named with the value of layer
         for one_layer in all_layers:
-            if one_layer.name == layer:
-                output = l.layers.get_output(one_layer)
-                out_fn = theano.function([self.input_var], output)
-                return out_fn(data)
-        raise ValueError('"%s" is not a layer in our network' % layer)
+            if one_layer.name == name:
+                return one_layer
+        raise ValueError('"%s" is not a layer in our network' % name)
+
 
     def preprocess_data(self, x, y=None):
         '''Prepare the data for the neural network.
@@ -259,29 +281,19 @@ class IBDChargeDenoisingConvAe(IBDPairConvAe2):
         super(IBDChargeDenoisingConvAe, self).__init__(*args, nchannels=2, **kwargs)
         self.only_charge = True
 
-    def _get_corrupt_input(self):
-        '''Set up the corrupted input variable with randomly zeroed pixels.'''
-        rng = np.random.RandomState(self.seed)
-        theano_rng = T.shared_randomstreams.RandomStreams(rng.randint(2 ** 30))
-        # each pixel in the mask has a p=1-self.zero_fraction chance of being
-        # 1, else 0
-        mask = theano_rng.binomial(size=self.input_var.shape,
-            dtype=theano.config.floatX, n=1, p=1-self.zero_fraction)
-        return mask * self.input_var
-
     def _setup_network(self):
         '''Set up the IBDPairConvAe2 network, but have it accept only 2 input
         channels, and partly corrupt the input by zeroing out some of the
         pixels.'''
-        corrupt_input_layer = l.layers.InputLayer(
-            input_var=self._get_corrupt_input(),
-            shape=self.minibatch_shape)
-
-        network = super(IBDChargeDenoisingConvAe, self)._setup_network()
         # Reassign the first convolutional layer's input to be the new corrupt
-        # input
-        layers = l.layers.get_all_layers(network)
-        first_conv_layer = layers[1]
-        first_conv_layer.input_layer = corrupt_input_layer
-        first_conv_layer.input_shape = corrupt_input_layer.output_shape
+        # input (after dropout)
+        network = l.layers.InputLayer(
+            input_var=self.input_var,
+            name='input',
+            shape=self.minibatch_shape)
+        network = l.layers.DropoutLayer(
+                network,
+                name='corruptor',
+                p=self.zero_fraction)
+        network = self._default_network_with_input(network)
         return network
