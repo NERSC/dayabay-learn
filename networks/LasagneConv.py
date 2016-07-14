@@ -274,29 +274,19 @@ class IBDChargeDenoisingConvAe(IBDPairConvAe2):
         super(IBDChargeDenoisingConvAe, self).__init__(*args, nchannels=2, **kwargs)
         self.only_charge = True
 
-    def _get_corrupt_input(self):
-        '''Set up the corrupted input variable with randomly zeroed pixels.'''
-        rng = np.random.RandomState(self.seed)
-        theano_rng = T.shared_randomstreams.RandomStreams(rng.randint(2 ** 30))
-        # each pixel in the mask has a p=1-self.zero_fraction chance of being
-        # 1, else 0
-        mask = theano_rng.binomial(size=self.input_var.shape,
-            dtype=theano.config.floatX, n=1, p=1-self.zero_fraction)
-        return mask * self.input_var
-
     def _setup_network(self):
         '''Set up the IBDPairConvAe2 network, but have it accept only 2 input
         channels, and partly corrupt the input by zeroing out some of the
         pixels.'''
-        corrupt_input_layer = l.layers.InputLayer(
-            input_var=self._get_corrupt_input(),
-            shape=self.minibatch_shape)
-
-        network = super(IBDChargeDenoisingConvAe, self)._setup_network()
         # Reassign the first convolutional layer's input to be the new corrupt
-        # input
-        layers = l.layers.get_all_layers(network)
-        first_conv_layer = layers[1]
-        first_conv_layer.input_layer = corrupt_input_layer
-        first_conv_layer.input_shape = corrupt_input_layer.output_shape
+        # input (after dropout)
+        network = l.layers.InputLayer(
+            input_var=self.input_var,
+            name='input',
+            shape=self.minibatch_shape)
+        network = l.layers.DropoutLayer(
+                network,
+                name='corruptor',
+                p=self.zero_fraction)
+        network = self._default_network_with_input(network)
         return network
