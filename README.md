@@ -1,20 +1,36 @@
-conv_ae_dayabay.py takes in an nx192 dayabay data and 
-uses a convolutional autoencoder to extract 10-dimensional features from each example and then plots each 10-D example in
-2-D using t-SNE.
+# Daya Bay Machine Learning Software
 
+This repository contains a set of neural networks developed to learn more about
+the data collected by the Daya Bay Reactor Neutrino Experiment.
 
-# Instructions for running on Cori:
+## Instructions:
 
-## From the command line:
+There are 2 main scripts: a command-line based python script, `ibd_ae.py`, and an IPython
+Notebook, `ibd_ae.ipynb`.
 
-* module load python
-* module load scikit-learn
-* module load neon
-* python conv_ae_dayabay.py --epochs [number of epochs] 
+To set up the Cori environment, run the following commands
 
-## From an iPython notebook:
+```
+module load python
+source activate deeplearning
+```
 
-* visit ipython.nersc.gov
-* sign in
-* navigate to **conv_ae_dayabay.ipynb**
-* click on it and run it
+On other environments, ensure the following dependencies are available:
+
+ - python
+ - theano
+ - lasagne
+ - scikit-learn
+ - numpy/scipy/matplotlib
+ - h5py
+
+To run the IPython notebook, open it up (e.g. at
+[ipython.nersc.gov](ipython.nersc.gov)) and follow the input prompts. To run
+the command-line script, you can find help by executing the following command:
+
+```
+python ibd_ae.py --help
+```
+
+There are multiple network architectures located in the networks directory.
+View the README there for more information.
