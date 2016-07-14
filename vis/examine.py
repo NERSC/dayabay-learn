@@ -38,6 +38,12 @@ if __name__ == '__main__':
         help='If saving, how many events to save')
     args = parser.parse_args()
 
+    include_time = {
+        'IBDPairConvAe': True,
+        'IBDPairConvAe2': True,
+        'IBDChargeDenoisingConvAe': False,
+    }
+
     # Figure out a good number of pairs to retrieve
     # Minimum of 200, then ensure there are enough to get to all of the desired
     # events.
@@ -73,23 +79,33 @@ if __name__ == '__main__':
                 'vmax': 1,
             })
         fig = plt.figure(1)
-        prompt_charge_ax = plt.subplot(2, 2, 1)
-        prompt_charge_im = plt.imshow(event[0], **image_args)
-        prompt_charge_ax.set_title('Prompt Charge')
-        plt.colorbar()
-        prompt_time_ax = plt.subplot(2, 2, 2, sharey=prompt_charge_ax)
-        prompt_time_im = plt.imshow(event[1], **image_args)
-        prompt_time_ax.set_title('Prompt Time')
-        plt.colorbar()
-        delayed_charge_ax = plt.subplot(2, 2, 3, sharex=prompt_charge_ax)
-        delayed_charge_im = plt.imshow(event[2], **image_args)
-        delayed_charge_ax.set_title('Delayed Charge')
-        plt.colorbar()
-        delayed_time_ax = plt.subplot(2, 2, 4, sharex=prompt_time_ax,
-            sharey=delayed_charge_ax)
-        delayed_time_im = plt.imshow(event[3], **image_args)
-        delayed_time_ax.set_title('Delayed Time')
-        plt.colorbar()
+        if include_time[args.preprocess]:
+            prompt_charge_ax = plt.subplot(2, 2, 1)
+            prompt_charge_im = plt.imshow(event[0], **image_args)
+            prompt_charge_ax.set_title('Prompt Charge')
+            plt.colorbar()
+            prompt_time_ax = plt.subplot(2, 2, 2, sharey=prompt_charge_ax)
+            prompt_time_im = plt.imshow(event[1], **image_args)
+            prompt_time_ax.set_title('Prompt Time')
+            plt.colorbar()
+            delayed_charge_ax = plt.subplot(2, 2, 3, sharex=prompt_charge_ax)
+            delayed_charge_im = plt.imshow(event[2], **image_args)
+            delayed_charge_ax.set_title('Delayed Charge')
+            plt.colorbar()
+            delayed_time_ax = plt.subplot(2, 2, 4, sharex=prompt_time_ax,
+                sharey=delayed_charge_ax)
+            delayed_time_im = plt.imshow(event[3], **image_args)
+            delayed_time_ax.set_title('Delayed Time')
+            plt.colorbar()
+        else:
+            prompt_charge_ax = plt.subplot(2, 1, 1)
+            prompt_charge_im = plt.imshow(event[0], **image_args)
+            prompt_charge_ax.set_title('Prompt Charge')
+            plt.colorbar()
+            delayed_charge_ax = plt.subplot(2, 1, 2)
+            delayed_charge_im = plt.imshow(event[2], **image_args)
+            delayed_charge_ax.set_title('Delayed Charge')
+            plt.colorbar()
 
         if args.save is None:
             plt.show()
