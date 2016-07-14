@@ -1,5 +1,6 @@
 '''This script will plot the PMT hit maps of the specified IBD pair'''
-import matplotlib.pyplot as plt
+# Import matplotlib after we know whether we want batch or interactive plots
+# See section below parser.parse_args()
 import numpy as np
 import h5py
 import argparse
@@ -37,6 +38,11 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--num-events', default=1, type=int,
         help='If saving, how many events to save')
     args = parser.parse_args()
+
+    if args.save is not None:
+        import matplotlib
+        matplotlib.use('agg')
+    import matplotlib.pyplot as plt
 
     include_time = {
         'IBDPairConvAe': True,
