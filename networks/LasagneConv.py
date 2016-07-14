@@ -39,13 +39,20 @@ class IBDPairConvAe(AbstractNetwork):
 
     def _setup_network(self):
         '''Construct the ConvAe architecture for Daya Bay IBDs.'''
-        num_filters = 128
-        initial_weights = l.init.Normal(1.0/self.num_features, 0)
         # Input layer shape = (minibatch_size, 4, 8, 24)
         network = l.layers.InputLayer(
             input_var=self.input_var,
             name='input',
             shape=self.minibatch_shape)
+        network = self._default_network_with_input(network)
+        return network
+
+    def _default_network_with_input(self, incoming):
+        '''Add on the default/standard conv/bottleneck/deconv layers to the
+        specified incoming network'''
+        num_filters = 128
+        initial_weights = l.init.Normal(1.0/self.num_features, 0)
+        network = incoming
         # post-conv shape = (minibatch_size, num_filters, 8, 24)
         network = l.layers.Conv2DLayer(
             network,
