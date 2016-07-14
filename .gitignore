@@ -2,6 +2,7 @@
 *.pyc
 *.swp
 *.h5
+*.pdf
 results
 # Ignore everything in batch log and tmp except for .gitkeep
 batch/logs/*
