@@ -48,6 +48,8 @@ if __name__ == '__main__':
         'IBDPairConvAe': True,
         'IBDPairConvAe2': True,
         'IBDChargeDenoisingConvAe': False,
+        'yestime': True,
+        'notime': False,
     }
 
     # Figure out a good number of pairs to retrieve
@@ -73,6 +75,17 @@ if __name__ == '__main__':
 
     for i in range(args.event, args.event + args.num_events):
         event = data[i]
+        if args.preprocess is not None:
+            classtype = args.preprocess
+        else:
+            shape = event.shape
+            if shape[0] == 2:
+                classtype = 'notime'
+            elif shape[0] == 4:
+                classtype = 'yestime'
+            else:
+                raise ValueError('Invalid Shape')
+
         # Construct pyplot canvas with images
         image_args = {
             'interpolation': 'nearest',
@@ -85,7 +98,7 @@ if __name__ == '__main__':
                 'vmax': 1,
             })
         fig = plt.figure(1)
-        if include_time[args.preprocess]:
+        if include_time[classtype]:
             prompt_charge_ax = plt.subplot(2, 2, 1)
             prompt_charge_im = plt.imshow(event[0], **image_args)
             prompt_charge_ax.set_title('Prompt Charge')
@@ -104,12 +117,18 @@ if __name__ == '__main__':
             delayed_time_ax.set_title('Delayed Time')
             plt.colorbar()
         else:
+            if args.input:
+                prompt_index = 0
+                delayed_index = 2
+            else:
+                prompt_index = 0
+                delayed_index = 1
             prompt_charge_ax = plt.subplot(2, 1, 1)
-            prompt_charge_im = plt.imshow(event[0], **image_args)
+            prompt_charge_im = plt.imshow(event[prompt_index], **image_args)
             prompt_charge_ax.set_title('Prompt Charge')
             plt.colorbar()
             delayed_charge_ax = plt.subplot(2, 1, 2)
-            delayed_charge_im = plt.imshow(event[2], **image_args)
+            delayed_charge_im = plt.imshow(event[delayed_index], **image_args)
             delayed_charge_ax.set_title('Delayed Charge')
             plt.colorbar()
 
