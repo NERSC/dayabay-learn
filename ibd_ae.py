@@ -62,7 +62,32 @@ def setup_parser():
             'IBDChargeDenoisingConvAe',
         ],
         help='network to use')
+    parser.add_argument('--accidental-fraction', type=float, default=0,
+        help='fraction of train, test, and val sets that are' +
+        ' intentionally accidentals')
     return parser
+
+def make_accidentals(only_charge, fraction, *datasets):
+    '''Scramble a given fraction of events in datasets to make them
+    "accidental" background.
+
+    Accomplish this task by shuffling prompt signals (charge and possibly time,
+    depending on the value of only_charge) to produce uncorrelated hit
+    patterns.
+
+    This method assumes the following shape for supplied data: (batch, [prompt
+    charge, prompt time, delayed charge, delayed time], x, y).'''
+    if fraction == 0:
+        return
+    for data in datasets:
+        totalentries = data.shape[0]
+        num_scrambled = int(np.ceil(totalentries * fraction))
+        toscramble = np.random.permutation(totalentries)[:num_scrambled]
+        scrambledestinations = np.random.permutation(toscramble)
+        data[scrambledestinations, 0] = data[toscramble, 0]
+        if not only_charge:  # then also scramble time
+            data[scrambledestinations, 1] = data[toscramble, 1]
+        return
 
 if __name__ == "__main__":
     parser = setup_parser()
@@ -92,6 +117,8 @@ if __name__ == "__main__":
     only_charge = getattr(cae, 'only_charge', False)
     train, val, test = get_ibd_data(tot_num_pairs=args.numpairs,
         just_charges=only_charge)
+    # Scramble data to artificially introduce accidental background
+    make_accidentals(only_charge, args.accidental_fraction, train, val, test)
     preprocess = cae.preprocess_data(train)
     preprocess(val)
     preprocess(test)
