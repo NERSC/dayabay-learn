@@ -6,7 +6,8 @@ the data collected by the Daya Bay Reactor Neutrino Experiment.
 ## Instructions:
 
 There are 2 main scripts: a command-line based python script, `ibd_ae.py`, and an IPython
-Notebook, `ibd_ae.ipynb`.
+Notebook, `ibd_ae.ipynb`. There is also a helper script to make t-SNE plots,
+`tsne.py`.
 
 To set up the Cori environment, run the following commands
 
