@@ -163,26 +163,26 @@ if __name__ == "__main__":
         else:
             delayed_index = 1
         for i in range(numevents):
-            plt.subplot(2, 2 * numevents, i + 1)
+            fig = plt.figure(1)
+            plt.subplot(4, numevents, i + 1)
             plt.imshow(kwargs['input'][i, 0].T, **plotargs)
             plt.title('input %d' % i)
             if i == 0:
                 plt.ylabel('Prompt Charges')
-            plt.subplot(2, 2 * numevents, numevents + i + 1)
+            plt.subplot(4, numevents, numevents + i + 1)
             plt.imshow(kwargs['input'][i, delayed_index].T, **plotargs)
-            plt.title('input %d' % i)
             if i == 0:
                 plt.ylabel('Delayed Charges')
-            plt.subplot(2, 2 * numevents, i + 2 * numevents + 1)
+            plt.subplot(4, numevents, i + 2 * numevents + 1)
             plt.imshow(kwargs['output'][i, 0].T, **plotargs)
             plt.title('output %d' % i)
             if i == 0:
                 plt.ylabel('Prompt Charges')
-            plt.subplot(2, 2 * numevents, i + 3 * numevents + 1)
+            plt.subplot(4, numevents, i + 3 * numevents + 1)
             plt.imshow(kwargs['output'][i, delayed_index].T, **plotargs)
-            plt.title('output %d' % i)
             if i == 0:
                 plt.ylabel('Delayed Charges')
+        fig.set_size_inches(12, 16, forward=True)
         plt.savefig(os.path.join(
             args.out_dir,
             'reco%d.pdf' % kwargs['epoch']))
