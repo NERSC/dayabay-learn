@@ -220,7 +220,10 @@ if __name__ == "__main__":
         logging.info('Saving autoencoder output')
         outdata = np.vstack((cae.predict(train)[1], cae.predict(val)[1],
             cae.predict(test)[1]))
+        indata = np.vstack((train, val, test))
         filename = os.path.join(args.out_dir, args.save_prediction)
         outfile = h5py.File(filename, 'w')
+        indset = outfile.create_dataset("ibd_pair_inputs", data=indata,
+            compression="gzip", chunks=True)
         outdset = outfile.create_dataset("ibd_pair_predictions", data=outdata,
             compression="gzip", chunks=True)
