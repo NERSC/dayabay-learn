@@ -157,6 +157,8 @@ if __name__ == "__main__":
         plotargs = {
             'interpolation': 'nearest',
             'aspect': 'auto',
+            'vmin': -1,
+            'vmax': 1,
         }
         if kwargs['input'].shape[1] == 4:
             delayed_index = 2
