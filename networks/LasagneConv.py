@@ -289,4 +289,5 @@ class IBDChargeDenoisingConvAe(IBDPairConvAe2):
                 name='corruptor',
                 p=self.zero_fraction)
         network = self._default_network_with_input(network)
+        network.nonlinearity = l.nonlinearities.tanh
         return network
