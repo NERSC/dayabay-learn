@@ -31,6 +31,9 @@ if __name__ == '__main__':
         help='if specified, save the TSNE coordinates to the given location')
     parser.add_argument('-l', '--layer-name', default='bottleneck',
         help='the name given to the layer to extract')
+    parser.add_argument('-c', '--condition', nargs='*',
+        help='the name(s) of the condition(s) to use to split/color the' +
+        ' data points')
     args = parser.parse_args()
 
 
@@ -52,11 +55,46 @@ if __name__ == '__main__':
         else:
             features = np.vstack((features, features_tmp[:, :, 0, 0]))
 
+    # set up different colors
+    conditions = {}
+    def isaccidental(batch):
+        '''Approximate isaccidental based on the distance between max pixels.'''
+        flat_ish = batch.reshape(batch.shape[0], batch.shape[1], -1)
+        maxes = flat_ish.argmax(axis=2)
+        flat_indexes = np.unravel_index(maxes.flat, (batch.shape[2],
+            batch.shape[3]))
+        # The goal is to have an array with contents
+        # [
+        #     [   [prompt_x, prompt_y],
+        #         [delayed_x, delayed_y],
+        #         (etc. over all channels)   ],
+        # ...
+        # ]
+        # (or perhaps more 
+        flat_index_pairs = np.vstack(flat_indexes).T.reshape(
+            batch.shape[0], batch.shape[1], 2)
+        distances = np.hypot(
+            flat_index_pairs[:, :, 0],
+            flat_index_pairs[:, :, 1])
+        return np.fabs(distances[:, 0] - distances[:, 1]) > 5
+
+
+    conditions['accidental'] = isaccidental
+
     myTSNE = TSNE(random_state=0)
     result = myTSNE.fit_transform(features)
 
-    plt.plot(result[:, 0], result[:, 1], 'ro')
-    plt.savefig(args.output)
+    if args.condition is None:
+        plt.plot(result[:, 0], result[:, 1], 'ro')
+        plt.savefig(args.output)
+    else:
+        for condition in args.condition:
+            f = conditions[condition]
+            mask = f(data)
+            plt.plot(result[mask, 0], result[mask, 1], 'ro')
+            plt.plot(result[~mask, 0], result[~mask, 1], 'bo')
+            plt.legend([condition, 'not %s' % condition])
+            plt.savefig(condition + args.output)
 
     if args.save_data is not None:
         np.save(args.save_data, result)
