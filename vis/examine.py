@@ -24,6 +24,9 @@ if __name__ == '__main__':
         help='interpret the file as input')
     gp.add_argument('-o', '--output', action='store_true',
         help='interpret the file as output')
+    gp.add_argument('--custom-input', action='store_true',
+        help='read in custom input from the given h5' +
+        ' file, dset=ibd_pair_inputs')
     parser.add_argument('--flex-color', action='store_true',
         help='use a variable color scale per plot')
     parser.add_argument('--preprocess', default=None, choices=[
@@ -69,6 +72,8 @@ if __name__ == '__main__':
             cae.preprocess_data(data)
     elif args.output:
         data = load_predictions(infile, tot_num_pairs=num_pairs)
+    elif args.custom_input:
+        data = h5py.File(infile)['ibd_pair_inputs']
 
     if args.save is None:
         args.num_events = 1
