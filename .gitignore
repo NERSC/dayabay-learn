@@ -11,6 +11,6 @@ batch/logs/*
 batch/tmp_output/*
 !.gitkeep
 # Keep sample batch files and ignore the "real" ones
-batch/*.py
+batch/*.sh
 batch/*.sl
 !batch/*.example
