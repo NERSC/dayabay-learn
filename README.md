@@ -13,7 +13,7 @@ To set up the Cori environment, run the following commands
 
 ```
 module load python
-source activate deeplearning
+module load deeplearning 
 ```
 
 On other environments, ensure the following dependencies are available:
