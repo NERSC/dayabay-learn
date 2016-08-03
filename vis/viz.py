@@ -22,7 +22,7 @@ class Viz(object):
             x = x_2d[self.gr_truth == i]
             plt.scatter(x[:,0], x[:,1],color=self.colors[i], label=self.labels[i])
         plt.legend(loc='lower left', ncol= 5, fontsize=12)
-        #plt.show()
+        #pass
         if save:
             self.save(name='feat_scatter')
 

@@ -138,7 +138,7 @@ if __name__ == '__main__':
             plt.colorbar()
 
         if args.save is None:
-            plt.show()
+            pass
         else:
             split = os.path.splitext(args.save)
             plt.savefig("%s_%d%s" % (split[0], i, split[1]))
