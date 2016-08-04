@@ -35,7 +35,7 @@ def build_denoising_convae(input_var,input_shape,
     
     
     
-    #input var is (n_ex x 4 x 8 x 24)
+    #input var is (n_ex x 2 x 8 x 24)
     network = L.InputLayer(shape=input_shape, input_var=corrup_input)
     print network.get_output_shape_for(input_shape)
     #output of this is num_filters x 11 x 12
@@ -135,31 +135,26 @@ def build_network(learning_rate = 0.01,
             param_values = [f['arr_%d' % i] for i in range(len(f.files))]
             lasagne.layers.set_all_param_values(network, param_values)
 
-    # Create a loss expression for training, i.e., a scalar objective we want
-    # to minimize (for our multi-class problem, it is the cross-entropy loss):
+
     prediction = lasagne.layers.get_output(network, deterministic=False)
-    hid_layer_output = lasagne.layers.get_output(hid_layer, deterministic=False)
+    hid_layer_output = lasagne.layers.get_output(hid_layer, deterministic=True)
     loss = lasagne.objectives.squared_error(prediction, target_var)
     loss = loss.mean()
     
   
 
-    # Create update expressions for training, i.e., how to modify the
-    # parameters at each training step
     params = lasagne.layers.get_all_params(network, trainable=True)
     updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=learning_rate, momentum=momentum)
 
-    # Create a loss expression for validation/testing. The crucial difference
-    # here is that we do a deterministic forward pass through the network,
-    # disabling dropout layers.
+
     test_prediction = lasagne.layers.get_output(network, deterministic=True)
     test_loss = lasagne.objectives.squared_error(test_prediction,
                                                                 target_var)
     test_loss = test_loss.mean()
 
 
+    salmap = theano.grad(hid_layer_output.sum(), wrt=input_var)
 
-    # maybe do this parzen window/ likelihood thing
     test_acc = test_loss 
 
 
@@ -169,18 +164,20 @@ def build_network(learning_rate = 0.01,
 
     val_fn = theano.function([input_var, target_var], [test_loss, test_acc])
     
-    pred_fn = theano.function([input_var], prediction)
+    pred_fn = theano.function([input_var], test_prediction)
     
-    hlayer_fn = theano.function([input_var], lasagne.layers.get_output(hid_layer, deterministic=True) )
+    hlayer_fn = theano.function([input_var], hid_layer_output )
+    
+    salmap_fn = theano.function([input_var], salmap)
 
-    return train_fn, val_fn, pred_fn, hlayer_fn,network
+    return train_fn, val_fn, pred_fn, hlayer_fn, salmap_fn, network
 
 
 
 if __name__ == "__main__":
     #make data
     xtr,xv,xte = get_ibd_data(tot_num_pairs=30, preprocess=True)
-    train_fn, val_fn, pred_fn, hlayer_fn, network = build_network(input_shape=(None,4,8,24))
+    train_fn, val_fn, pred_fn, hlayer_fn, salmap_fn, network = build_network(input_shape=(None,4,8,24))
     a=train_fn(xtr,xtr)
     b=pred_fn(xtr)
     c=hlayer_fn(xtr)

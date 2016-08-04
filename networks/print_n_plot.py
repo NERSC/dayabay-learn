@@ -51,10 +51,9 @@ def walk_manifold(ims,ts):
 
 
 if __name__ == "__main__":
-    '''just a quick test'''
-    x,t= pickle.load(open('../results/ev-runs/run18/tsne.pkl'))
+    orig_input, tsne_output = pickle.load(open('../results/ev-runs/run27/tsne.pkl'))
     
-    walk_manifold(x,t)
+    walk_manifold(orig_input, tsne_output)
 
 
 

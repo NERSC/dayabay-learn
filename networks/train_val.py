@@ -6,7 +6,7 @@ import lasagne
 import time
 
 import sys
-from print_n_plot import print_train_results,plot_learn_curve,print_val_results, plot_reconstruction
+from print_n_plot import print_train_results,plot_learn_curve,print_val_results, plot_reconstruction, calc_plot_n_save_tsne
 from matplotlib import pyplot as plt
 
 
@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 #TODO: adding logging
 #TODO add special way of saving run info based on run number or date or something
 #TODO add getting weights over updates
-def train(datasets,network,train_fn, val_fn,pred_fn=None, num_epochs=50, save_weights=False, save_plots=True, save_path='./results',
+def train(datasets,network,train_fn, val_fn,hlayer_fn=None,pred_fn=None,salmap_fn=None, num_epochs=50, save_weights=False, save_plots=True, save_path='./results',
           batchsize=128, network_kwargs={}, load_path=None):
     
     """Train function
@@ -49,6 +49,9 @@ def train(datasets,network,train_fn, val_fn,pred_fn=None, num_epochs=50, save_we
         if epoch % 10 == 0:
             plot_learn_curve(train_errs,val_errs, 'err', save_plots=save_plots,path=save_path)
             plot_learn_curve(train_accs,val_accs, 'acc', save_plots=save_plots, path=save_path)
+            if hlayer_fn:
+                hlayer = hlayer_fn(x_tr)
+                calc_plot_n_save_tsne(x_train=x_tr, hlayer=hlayer, run_dir=save_path)
             if pred_fn:
                 rec = pred_fn(x_tr)
                 n_ims = rec.shape[0]
@@ -57,6 +60,18 @@ def train(datasets,network,train_fn, val_fn,pred_fn=None, num_epochs=50, save_we
                 plot_reconstruction(x_tr[:,0], rec[:,0], indx=25,save=save_plots,  path=save_path)
                 plot_reconstruction(x_tr[:,0], rec[:,0], indx=50,save=save_plots,  path=save_path)
                 plot_reconstruction(x_tr[:,0], rec[:,0], indx=n_ims-1,save=save_plots,  path=save_path)
+            if salmap_fn:
+                sal = salmap_fn(x_tr)
+                plt.figure(47)
+                plt.imshow(x_tr[0,0], interpolation='none')
+                plt.savefig(save_path + '/orig_nosal.png' )
+                pass
+                plt.figure(48)
+                plt.imshow(np.abs(sal[0,0]),interpolation='none', cmap='gray')
+                plt.savefig(save_path + '/sal.png')
+                pass
+                
+                
             #plot weights or updates or something 
             
             

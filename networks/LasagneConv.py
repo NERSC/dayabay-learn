@@ -39,7 +39,6 @@ class IBDPairConvAe(AbstractNetwork):
 
     def _setup_network(self):
         '''Construct the ConvAe architecture for Daya Bay IBDs.'''
-        # Input layer shape = (minibatch_size, 4, 8, 24)
         network = l.layers.InputLayer(
             input_var=self.input_var,
             name='input',

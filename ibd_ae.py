@@ -28,7 +28,6 @@ logging.basicConfig(format='%(levelname)s:\t%(message)s')
 # 5) Other (background noise) 00001 or 5
 
 
-# In[118]:
 
 def setup_parser():
     parser = argparse.ArgumentParser()

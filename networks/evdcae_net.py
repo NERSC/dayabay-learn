@@ -37,7 +37,7 @@ class DenoisingConvAe(AbstractNetwork):
         network_kwargs = kwargs['network_kwargs'] if 'network_kwargs' in kwargs else {}
         self.train_kwargs = kwargs['train_kwargs'] if 'train_kwargs' in kwargs else {}
         
-        self.train_fn,         self.val_fn,         self.pred_fn,         self.hlayer_fn,        self.network = build_network(**network_kwargs)
+        self.train_fn,         self.val_fn,         self.pred_fn,         self.hlayer_fn,        self.salmap_fn,        self.network = build_network(**network_kwargs)
         
         
 
@@ -47,7 +47,9 @@ class DenoisingConvAe(AbstractNetwork):
                              self.network, 
                              self.train_fn, 
                              self.val_fn,
+                             hlayer_fn = self.hlayer_fn,
                              pred_fn = self.pred_fn,
+                             salmap_fn = self.salmap_fn,
                              **self.train_kwargs)
         
 
@@ -57,6 +59,9 @@ class DenoisingConvAe(AbstractNetwork):
 
     def extract_hidden_layer(self, data):
         return self.hlayer_fn(data)
+    
+    def get_saliency_map(self,data):
+        return self.salmap_fn(data)
         
 
     def minibatch_iterator(self, x, y):
@@ -82,7 +87,7 @@ if __name__ == "__main__":
 
     hlayer = dca.extract_hidden_layer(x_train)
 
-
+#     salmap =
 
     ts = TSNE(perplexity=50).fit_transform(hlayer)
 

@@ -30,27 +30,27 @@ import argparse
 
 
 if __name__ == "__main__":
-    epochs =1
+    epochs =11
     numpairs = 200
     learn_rate = 0.01
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-e', '--epochs', type=int, default=1,
-        help='number of epochs for training')
-    parser.add_argument('-w', '--bottleneck-width', type=int, default=10,
-        help='number of features in the bottleneck layer')
-    parser.add_argument('-n', '--numpairs', type=int, default=200,
-        help='number of IBD pairs to use')
-    parser.add_argument('-l', '--learn_rate', default=0.01, type=float,
-        help='the learning rate for the network')
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('-e', '--epochs', type=int, default=1,
+#         help='number of epochs for training')
+#     parser.add_argument('-w', '--bottleneck-width', type=int, default=10,
+#         help='number of features in the bottleneck layer')
+#     parser.add_argument('-n', '--numpairs', type=int, default=200,
+#         help='number of IBD pairs to use')
+#     parser.add_argument('-l', '--learn_rate', default=0.01, type=float,
+#         help='the learning rate for the network')
 
-    parser.add_argument('--accidental-fraction', type=float, default=0,
-        help='fraction of train, test, and val sets that are' +
-        ' intentionally accidentals')
-    args = parser.parse_args()
-    epochs = args.epochs
-    numpairs = args.numpairs
-    learn_rate = args.learn_rate
+#     parser.add_argument('--accidental-fraction', type=float, default=0,
+#         help='fraction of train, test, and val sets that are' +
+#         ' intentionally accidentals')
+#     args = parser.parse_args()
+#     epochs = args.epochs
+#     numpairs = args.numpairs
+#     learn_rate = args.learn_rate
     
     run_dir = create_run_dir()
     
@@ -65,11 +65,11 @@ if __name__ == "__main__":
 
     dca.fit(x_train,x_train,x_val,x_val)
 
-    rec= dca.predict(x_train)
+#     rec= dca.predict(x_train)
 
-    hlayer = dca.extract_hidden_layer(x_train)
+#     hlayer = dca.extract_hidden_layer(x_train)
     
-    calc_plot_n_save_tsne(x_train, hlayer, run_dir)
+    #calc_plot_n_save_tsne(x_train, hlayer, run_dir)
     
     
 
