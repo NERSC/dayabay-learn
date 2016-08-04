@@ -41,11 +41,11 @@ if __name__ == '__main__':
         minibatch_size=args.minibatch_size)
     cae.load(args.model)
     tot_num_pairs = args.minibatch_size * args.num_batches
-    load the data
+    # load the data
     data, _, _ = get_ibd_data(tot_num_pairs=tot_num_pairs, just_charges=True,
         train_frac=1, valid_frac=0)
 
-    Get bottleneck layer output for each set
+    # Get bottleneck layer output for each set
     preprocess = cae.preprocess_data(data)
     for i in range(args.num_batches):
         range_to_feed = slice(i*args.minibatch_size, (i+1)*args.minibatch_size)
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         else:
             features = np.vstack((features, features_tmp[:, :, 0, 0]))
 
-    set up different colors
+    # set up different colors
     conditions = {}
     def isaccidental(batch):
         '''Approximate isaccidental based on the distance between max pixels.'''
@@ -63,14 +63,14 @@ if __name__ == '__main__':
         maxes = flat_ish.argmax(axis=2)
         flat_indexes = np.unravel_index(maxes.flat, (batch.shape[2],
             batch.shape[3]))
-        The goal is to have an array with contents
-        [
-            [   [prompt_x, prompt_y],
-                [delayed_x, delayed_y],
-                (etc. over all channels)   ],
-        ...
-        ]
-        (or perhaps more 
+        # The goal is to have an array with contents
+        # [
+        #     [   [prompt_x, prompt_y],
+        #         [delayed_x, delayed_y],
+        #         (etc. over all channels)   ],
+        # ...
+        # ]
+        # (or perhaps more 
         flat_index_pairs = np.vstack(flat_indexes).T.reshape(
             batch.shape[0], batch.shape[1], 2)
         distances = np.hypot(
