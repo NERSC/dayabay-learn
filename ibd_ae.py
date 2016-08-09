@@ -21,11 +21,11 @@ logging.basicConfig(format='%(levelname)s:\t%(message)s')
 
 
 
-# 1) Primary AD           10000 or 1
-# 2) Delayed AD response  01000 or 2
-# 3) Muon decay           00100 or 3
-# 4) Flasher              00010 or 4
-# 5) Other (background noise) 00001 or 5
+1) Primary AD           10000 or 1
+2) Delayed AD response  01000 or 2
+3) Muon decay           00100 or 3
+4) Flasher              00010 or 4
+5) Other (background noise) 00001 or 5
 
 
 
@@ -85,7 +85,7 @@ def make_accidentals(only_charge, fraction, *datasets):
         toscramble = np.random.permutation(totalentries)[:num_scrambled]
         scrambledestinations = np.random.permutation(toscramble)
         data[scrambledestinations, 0] = data[toscramble, 0]
-        if not only_charge:  # then also scramble time
+        if not only_charge:  then also scramble time
             data[scrambledestinations, 1] = data[toscramble, 1]
         return
 
@@ -117,14 +117,14 @@ if __name__ == "__main__":
     only_charge = getattr(cae, 'only_charge', False)
     train, val, test = get_ibd_data(tot_num_pairs=args.numpairs,
         just_charges=only_charge)
-    # Scramble data to artificially introduce accidental background
+    Scramble data to artificially introduce accidental background
     make_accidentals(only_charge, args.accidental_fraction, train, val, test)
     preprocess = cae.preprocess_data(train)
     preprocess(val)
     preprocess(test)
 
-    # set up a decorator to only run the function if the epoch is at the
-    # appropriate value (usually == 0 (mod 10) or some such thing)
+    set up a decorator to only run the function if the epoch is at the
+    appropriate value (usually == 0 (mod 10) or some such thing)
     def only_on_some_epochs(f):
         def wrapper(*arglist, **kwargs):
             if kwargs['epoch'] % args.save_interval == args.save_interval - 1:
@@ -208,7 +208,7 @@ if __name__ == "__main__":
         logging.info('Constructing visualization')
         v = Viz(gr_truth,nclass=1)
 
-        # take first two principal components of features, so we can plot easily
+        take first two principal components of features, so we can plot easily
         #normally we would do t-SNE (but takes too long for quick demo)
         #x_pc = v.get_pca(feat)
 

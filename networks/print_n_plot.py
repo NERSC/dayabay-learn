@@ -62,54 +62,57 @@ if __name__ == "__main__":
 
 
 
-def print_train_results(epoch, num_epochs, start_time, tr_err, tr_acc):
+def print_train_results(epoch, num_epochs, start_time, tr_err, tr_acc, logger):
     # Then we print the results for this epoch:
-    print "Epoch {} of {} took {:.3f}s".format(epoch + 1, num_epochs, time.time() - start_time)
-    print "\ttraining los:\t\t{:.4f}".format(tr_err)
-    print "\ttraining acc:\t\t{:.4f} %".format(tr_acc * 100)
+    logger.info("Epoch {} of {} took {:.3f}s".format(epoch + 1, num_epochs, time.time() - start_time))
+    logger.info("\ttraining los:\t\t{:.4f}".format(tr_err))
+    logger.info("\ttraining acc:\t\t{:.4f} %".format(tr_acc * 100))
 
 
-def print_val_results(val_err, val_acc):
-    print "  validation loss:\t\t{:.6f}".format(val_err)
-    print "  validation accuracy:\t\t{:.2f} %".format(val_acc * 100)
+def print_val_results(val_err, val_acc, logger):
+    logger.info("  validation loss:\t\t{:.6f}".format(val_err))
+    logger.info("  validation accuracy:\t\t{:.2f} %".format(val_acc * 100))
 
-def plot_learn_curve(train_errs_or_accs, val_errs_or_accs, err_or_acc, save_plots, path,mode=''):
+def plot_learn_curve(train_errs_or_accs, val_errs_or_accs, val_counter, err_or_acc, save_plots, path):
         plt.figure(1 if err_or_acc == 'err' else 2)
         plt.clf()
-        plt.title('%s Train/Val %s' %(mode,err_or_acc))
+        plt.title('Train/Val %s' %(err_or_acc))
         plt.plot(train_errs_or_accs, label='train ' + err_or_acc)
-        plt.plot(val_errs_or_accs, label='val' + err_or_acc)
+        plt.plot(val_counter, val_errs_or_accs, label='val' + err_or_acc)
         plt.legend( loc = 'center left', bbox_to_anchor = (1.0, 0.5),
            ncol=2)
         if save_plots:
-            plt.savefig("%s/%s_%s_learning_curve.png"%(path,err_or_acc,mode))
+            plt.savefig("%s/%s_learning_curve.png"%(path,err_or_acc))
             pass
         else:
             pass
 
 
 
-def plot_reconstruction(x_inp,x_reconstructed,indx=0, save=False, path=''):
-    cls= ''
-    plt.figure(indx)
+import numpy as np
+
+
+
+np.random.randint
+
+
+
+def plot_side_by_side(x_inps,x_trans,inds,epoch,mode='rec', save=False, path='', cmap=None):
+    num_per_row = 2 # cuz reconstructed and original
     plt.clf()
-    imo = x_inp[indx]
-    dimo = plt.imshow(imo,interpolation='none' )
-    plt.colorbar(dimo)
-    plt.title('original')
+    plt.figure(1, figsize=(60,60))
+
+    count= 1
+    for i in inds:
+        sp = plt.subplot(inds.shape[0],num_per_row, count)
+        sp.imshow(x_inps[i].reshape(16,24), interpolation='none')
+        spr = plt.subplot(inds.shape[0],num_per_row, count + 1)
+        spr.imshow(x_trans[i].reshape(16,24), interpolation='none', cmap=cmap)
+        count+= 2
+    #plt.title('Original on left, Reconstructed on Right. Epoch %i' % (epoch))
     if save:
-        plt.savefig("%s/orig%i.png"%(path, indx))
-        pass
-    else:
-        pass
-    plt.figure(indx+1)
-    plt.clf()
-    imr = x_reconstructed[indx]
-    dimr = plt.imshow(imr,interpolation='none' )
-    plt.colorbar(dimr)
-    plt.title('reconstructed')
-    if save:
-        plt.savefig("%s/rec%i.png"%(path, indx))
+        plt.savefig("%s/epoch_%i_%s.png"%(path,epoch, mode))
+        plt.savefig("%s/%s.png"%(path, mode))
         pass
     else:
         pass
