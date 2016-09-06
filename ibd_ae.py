@@ -11,7 +11,7 @@ matplotlib.use('agg')
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from vis.viz import Viz
-from util.data_loaders import load_ibd_pairs, get_ibd_data
+from util.data_loaders import load_ibd_pairs, get_ibd_data, get_accidentals
 from util.helper_fxns import make_accidentals
 from networks.LasagneConv import IBDPairConvAe, IBDPairConvAe2
 from networks.LasagneConv import IBDChargeDenoisingConvAe
@@ -67,28 +67,6 @@ def setup_parser():
         ' intentionally accidentals')
     return parser
 
-def make_accidentals(only_charge, fraction, *datasets):
-    '''Scramble a given fraction of events in datasets to make them
-    "accidental" background.
-
-    Accomplish this task by shuffling prompt signals (charge and possibly time,
-    depending on the value of only_charge) to produce uncorrelated hit
-    patterns.
-
-    This method assumes the following shape for supplied data: (batch, [prompt
-    charge, prompt time, delayed charge, delayed time], x, y).'''
-    if fraction == 0:
-        return
-    for data in datasets:
-        totalentries = data.shape[0]
-        num_scrambled = int(np.ceil(totalentries * fraction))
-        toscramble = np.random.permutation(totalentries)[:num_scrambled]
-        scrambledestinations = np.random.permutation(toscramble)
-        data[scrambledestinations, 0] = data[toscramble, 0]
-        if not only_charge:  # then also scramble time
-            data[scrambledestinations, 1] = data[toscramble, 1]
-        return
-
 if __name__ == "__main__":
     parser = setup_parser()
     args = parser.parse_args()
@@ -115,10 +93,20 @@ if __name__ == "__main__":
         cae.load(args.load_model)
     logging.info('Preprocessing data files')
     only_charge = getattr(cae, 'only_charge', False)
+    num_ibds = int(round((1 - args.accidental_fraction) * args.numpairs))
     train, val, test = get_ibd_data(tot_num_pairs=args.numpairs,
         just_charges=only_charge)
-    # Scramble data to artificially introduce accidental background
-    make_accidentals(only_charge, args.accidental_fraction, train, val, test)
+    if args.accidental_fraction > 0:
+        num_accidentals = args.numpairs - num_ibds
+        train_acc, val_acc, test_acc = get_accidentals(
+                num_accidentals=num_accidentals,
+                just_charges=only_charge)
+        train.extend(train_acc)
+        val.extend(val_acc)
+        test.extend(test_acc)
+        np.random.shuffle(train)
+        np.random.shuffle(val)
+        np.random.shuffle(test)
     preprocess = cae.preprocess_data(train)
     preprocess(val)
     preprocess(test)
