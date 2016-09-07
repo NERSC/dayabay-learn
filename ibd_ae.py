@@ -98,8 +98,9 @@ if __name__ == "__main__":
         just_charges=only_charge)
     if args.accidental_fraction > 0:
         num_accidentals = args.numpairs - num_ibds
-        train_acc, val_acc, test_acc = get_accidentals(
-                num_accidentals=num_accidentals,
+        path='/project/projectdirs/dasrepo/ibd_pairs/accidentals.h5'
+        train_acc, val_acc, test_acc = get_ibd_data(
+                path=path, tot_num_pairs=num_accidentals,
                 just_charges=only_charge)
         train.extend(train_acc)
         val.extend(val_acc)
