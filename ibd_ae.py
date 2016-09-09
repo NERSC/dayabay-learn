@@ -11,7 +11,7 @@ matplotlib.use('agg')
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from vis.viz import Viz
-from util.data_loaders import load_ibd_pairs, get_ibd_data, get_accidentals
+from util.data_loaders import load_ibd_pairs, get_ibd_data
 from util.helper_fxns import make_accidentals
 from networks.LasagneConv import IBDPairConvAe, IBDPairConvAe2
 from networks.LasagneConv import IBDChargeDenoisingConvAe
@@ -94,17 +94,18 @@ if __name__ == "__main__":
     logging.info('Preprocessing data files')
     only_charge = getattr(cae, 'only_charge', False)
     num_ibds = int(round((1 - args.accidental_fraction) * args.numpairs))
-    train, val, test = get_ibd_data(tot_num_pairs=args.numpairs,
+    train, val, test = get_ibd_data(tot_num_pairs=num_ibds,
         just_charges=only_charge)
     if args.accidental_fraction > 0:
         num_accidentals = args.numpairs - num_ibds
-        path='/project/projectdirs/dasrepo/ibd_pairs/accidentals.h5'
+        path='/global/homes/s/skohn/ml/dayabay-data-conversion/extract_accidentals/accidentals3.h5'
+        dsetname='accidentals_bg_data'
         train_acc, val_acc, test_acc = get_ibd_data(
                 path=path, tot_num_pairs=num_accidentals,
-                just_charges=only_charge)
-        train.extend(train_acc)
-        val.extend(val_acc)
-        test.extend(test_acc)
+                just_charges=only_charge, h5dataset=dsetname)
+        train = np.vstack((train, train_acc))
+        val = np.vstack((val, val_acc))
+        test = np.vstack((test, test_acc))
         np.random.shuffle(train)
         np.random.shuffle(val)
         np.random.shuffle(test)
