@@ -219,9 +219,12 @@ class IBDPairConvAe(AbstractNetwork):
         means = preprocessing.center(x)
         stds = preprocessing.scale(x, std, mode='standardize')
         def repeat_transformation(other):
-            preprocessing.fix_time_zeros(other)
-            other -= means
-            other /= stds/std
+            if len(other) == 0:
+                return
+            else:
+                preprocessing.fix_time_zeros(other)
+                other -= means
+                other /= stds/std
         return repeat_transformation
 
     def save(self, filename):
@@ -263,12 +266,15 @@ class IBDPairConvAe2(IBDPairConvAe):
         min_, max_, = -1, 1
         mins, maxes = preprocessing.scale_min_max(x, min_, max_)
         def repeat_transformation(other):
-            preprocessing.fix_time_zeros(other)
-            other -= means
-            other -= mins
-            other /= maxes - mins
-            other *= max_ - min_
-            other += min_
+            if len(other) == 0:
+                return
+            else:
+                preprocessing.fix_time_zeros(other)
+                other -= means
+                other -= mins
+                other /= maxes - mins
+                other *= max_ - min_
+                other += min_
         return repeat_transformation
 
 class IBDChargeDenoisingConvAe(IBDPairConvAe2):
