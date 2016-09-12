@@ -95,14 +95,15 @@ if __name__ == "__main__":
     only_charge = getattr(cae, 'only_charge', False)
     num_ibds = int(round((1 - args.accidental_fraction) * args.numpairs))
     train, val, test = get_ibd_data(tot_num_pairs=num_ibds,
-        just_charges=only_charge)
+        just_charges=only_charge, train_frac=1, valid_frac=0)
     if args.accidental_fraction > 0:
         num_accidentals = args.numpairs - num_ibds
         path='/global/homes/s/skohn/ml/dayabay-data-conversion/extract_accidentals/accidentals3.h5'
         dsetname='accidentals_bg_data'
         train_acc, val_acc, test_acc = get_ibd_data(
                 path=path, tot_num_pairs=num_accidentals,
-                just_charges=only_charge, h5dataset=dsetname)
+                just_charges=only_charge, h5dataset=dsetname,
+                train_frac=1, valid_frac=0)
         train = np.vstack((train, train_acc))
         val = np.vstack((val, val_acc))
         test = np.vstack((test, test_acc))
