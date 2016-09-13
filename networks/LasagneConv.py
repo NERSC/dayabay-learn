@@ -122,7 +122,7 @@ class IBDPairConvAe(AbstractNetwork):
 
     def _setup_cost(self, deterministic, array=False):
         '''Construct the sum-squared loss between the input and the output.
-        
+
         Must be called after self.network is defined.'''
         if deterministic:
             prediction = self.test_prediction
@@ -151,7 +151,7 @@ class IBDPairConvAe(AbstractNetwork):
         '''
         if y is not None:
             raise ValueError("We don't need labels here")
-            
+
         def minibatches():
             numinputs = x.shape[0]
             indices = np.arange(numinputs)
