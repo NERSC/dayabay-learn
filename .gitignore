@@ -3,6 +3,7 @@
 *.swp
 *.h5
 *.pdf
+*.png
 results
 *.npy
 *.npz
