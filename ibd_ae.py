@@ -208,8 +208,13 @@ if __name__ == "__main__":
 
     if args.save_prediction is not None:
         logging.info('Saving autoencoder output')
-        outdata = np.vstack((cae.predict(train)[1], cae.predict(val)[1],
-            cae.predict(test)[1]))
+        train_cost_prediction = cae.predict(train)
+        val_cost_prediction = cae.predict(val)
+        test_cost_prediction = cae.predict(test)
+        outdata = np.vstack((train_cost_prediction[1], val_cost_prediction[1],
+            test_cost_prediction[1]))
+        outcosts = np.vstack((train_cost_prediction[0], val_cost_prediction[0],
+            test_cost_prediction[0]))
         indata = np.vstack((train, val, test))
         filename = os.path.join(args.out_dir, args.save_prediction)
         outfile = h5py.File(filename, 'w')
@@ -217,3 +222,6 @@ if __name__ == "__main__":
             compression="gzip", chunks=True)
         outdset = outfile.create_dataset("ibd_pair_predictions", data=outdata,
             compression="gzip", chunks=True)
+        costdset = outfile.create_dataset("costs", data=outcosts,
+            compression="gzip", chunks=True)
+        outfile.close()

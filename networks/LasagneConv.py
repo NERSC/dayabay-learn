@@ -30,7 +30,7 @@ class IBDPairConvAe(AbstractNetwork):
         self.train_prediction = self._setup_prediction(deterministic=False)
         self.test_prediction = self._setup_prediction(deterministic=True)
         self.train_cost = self._setup_cost(deterministic=False)
-        self.test_cost = self._setup_cost(deterministic=True)
+        self.test_cost = self._setup_cost(deterministic=True, array=True)
         self.optimizer = self._setup_optimizer()
         self.train_once = theano.function([self.input_var],
             [self.train_cost], updates=self.optimizer)
@@ -120,7 +120,7 @@ class IBDPairConvAe(AbstractNetwork):
         autoencoder.'''
         return l.layers.get_output(self.network, deterministic=deterministic)
 
-    def _setup_cost(self, deterministic):
+    def _setup_cost(self, deterministic, array=False):
         '''Construct the sum-squared loss between the input and the output.
         
         Must be called after self.network is defined.'''
@@ -129,7 +129,8 @@ class IBDPairConvAe(AbstractNetwork):
         else:
             prediction = self.train_prediction
         cost = l.objectives.squared_error(prediction, self.input_var)
-        cost = l.objectives.aggregate(cost, mode='mean')
+        if not array:
+            cost = l.objectives.aggregate(cost, mode='mean')
         return cost
 
     def _setup_optimizer(self):
