@@ -65,6 +65,8 @@ def setup_parser():
     parser.add_argument('--accidental-fraction', type=float, default=0,
         help='fraction of train, test, and val sets that are' +
         ' intentionally accidentals')
+    parser.add_argument('--accidental-location', default=None,
+        help='file path of accidentals h5 file')
     return parser
 
 if __name__ == "__main__":
@@ -98,7 +100,10 @@ if __name__ == "__main__":
         just_charges=only_charge, train_frac=1, valid_frac=0)
     if args.accidental_fraction > 0:
         num_accidentals = args.numpairs - num_ibds
-        path='/global/homes/s/skohn/ml/dayabay-data-conversion/extract_accidentals/accidentals3.h5'
+        if args.accidental_location is None:
+            path='/global/homes/s/skohn/ml/dayabay-data-conversion/extract_accidentals/accidentals3.h5'
+        else:
+            path = args.accidental_location
         dsetname='accidentals_bg_data'
         train_acc, val_acc, test_acc = get_ibd_data(
                 path=path, tot_num_pairs=num_accidentals,
