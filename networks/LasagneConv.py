@@ -18,6 +18,7 @@ class IBDPairConvAe(AbstractNetwork):
         super(IBDPairConvAe, self).__init__(self)
         # Shapes are given as (batch, depth, height, width)
         nchannels = kwargs.get('nchannels', 4)
+        weighted = kwargs.get('weighted_cost', False)
         self.minibatch_shape = (minibatch_size, nchannels, 8, 24)
         self.minibatch_size = minibatch_size
         self.image_shape = self.minibatch_shape[1:-1]
@@ -29,7 +30,8 @@ class IBDPairConvAe(AbstractNetwork):
         self.network = self._setup_network()
         self.train_prediction = self._setup_prediction(deterministic=False)
         self.test_prediction = self._setup_prediction(deterministic=True)
-        self.train_cost = self._setup_cost(deterministic=False)
+        self.train_cost = self._setup_cost(deterministic=False,
+                weighted=weighted)
         self.test_cost = self._setup_cost(deterministic=True, array=True)
         self.optimizer = self._setup_optimizer()
         self.train_once = theano.function([self.input_var],
@@ -120,7 +122,7 @@ class IBDPairConvAe(AbstractNetwork):
         autoencoder.'''
         return l.layers.get_output(self.network, deterministic=deterministic)
 
-    def _setup_cost(self, deterministic, array=False):
+    def _setup_cost(self, deterministic, array=False, weighted=False):
         '''Construct the sum-squared loss between the input and the output.
 
         Must be called after self.network is defined.'''
@@ -129,8 +131,12 @@ class IBDPairConvAe(AbstractNetwork):
         else:
             prediction = self.train_prediction
         cost = l.objectives.squared_error(prediction, self.input_var)
+        if weighted:
+            weights = self.input_var
+        else:
+            weights = None
         if not array:
-            cost = l.objectives.aggregate(cost, mode='mean')
+            cost = l.objectives.aggregate(cost, weights=weights, mode='mean')
         return cost
 
     def _setup_optimizer(self):

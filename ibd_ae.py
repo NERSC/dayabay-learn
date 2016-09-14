@@ -55,6 +55,8 @@ def setup_parser():
         help='directory to save all files that may be requested')
     parser.add_argument('--save-interval', default=10, type=int,
         help='number of epochs between saving intermediate outputs')
+    parser.add_argument('--weighted-cost', action='store_true',
+        help='weight the costs by the individual pixel weights')
     parser.add_argument('--network', default='IBDPairConvAe',
         choices=[
             'IBDPairConvAe',
@@ -89,7 +91,8 @@ if __name__ == "__main__":
     logging.info('Constructing untrained ConvNet of class %s', args.network)
     convnet_class = eval(args.network)
     cae = convnet_class(bottleneck_width=args.bottleneck_width,
-        epochs=args.epochs, learn_rate=args.learn_rate)
+        epochs=args.epochs, learn_rate=args.learn_rate,
+        weighted_cost=args.weighted_cost)
     if args.load_model:
         logging.info('Loading model parameters from file %s', args.load_model)
         cae.load(args.load_model)
