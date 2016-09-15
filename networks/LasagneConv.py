@@ -132,7 +132,11 @@ class IBDPairConvAe(AbstractNetwork):
             prediction = self.train_prediction
         cost = l.objectives.squared_error(prediction, self.input_var)
         if weighted:
-            weights = self.input_var
+            # TODO This is super fragile. In particular, we know for IBDConvAe2
+            # and its descendents, the data is scaled to be between -1 and 1.
+            # So, adding 1 to the input means it will be between 0 and 2, which
+            # are good weights. Negative weights seem like a bad idea.
+            weights = self.input_var + 1
         else:
             weights = None
         if not array:
