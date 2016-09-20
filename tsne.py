@@ -57,7 +57,9 @@ if __name__ == '__main__':
     ids = np.zeros((data.shape[0]))
     if num_accidentals > 0:
         acc_data, _, _ = get_ibd_data(tot_num_pairs=num_accidentals,
-            just_charges=True, train_frac=1, valid_frac=0)
+            just_charges=True, train_frac=1, valid_frac=0,
+            path=args.accidental_h5_path,
+            h5dataset='accidentals_bg_data')
         data = np.vstack((data, acc_data))
         ids = np.hstack((ids, np.ones((acc_data.shape[0]))))
 
@@ -90,9 +92,9 @@ if __name__ == '__main__':
         for condition in args.condition:
             f = conditions[condition]
             mask = f(data)
-            plt.plot(result[mask, 0], result[mask, 1], 'ro')
             plt.plot(result[~mask, 0], result[~mask, 1], 'bo')
-            plt.legend([condition, 'not %s' % condition])
+            plt.plot(result[mask, 0], result[mask, 1], 'ro')
+            plt.legend(['not %s' % condition, condition])
             print "saving plot"
             plt.savefig(condition + args.output)
 
