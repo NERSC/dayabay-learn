@@ -1,23 +1,4 @@
 __author__ = 'racah'
-import numpy as np
-import os
-import pickle
-import sys
-import h5py
-import matplotlib
-from sklearn.manifold import TSNE
-import numpy as np
-matplotlib.use('agg')
-from matplotlib import pyplot as plt
-from sklearn.decomposition import PCA
-from vis.viz import Viz
-from util.data_loaders import load_ibd_pairs, get_ibd_data
-from util.helper_fxns import make_accidentals
-from networks.LasagneConv import IBDPairConvAe, IBDPairConvAe2
-from networks.LasagneConv import IBDChargeDenoisingConvAe
-import argparse
-import logging
-logging.basicConfig(format='%(levelname)s:\t%(message)s')
 
 
 
@@ -55,6 +36,8 @@ def setup_parser():
         help='directory to save all files that may be requested')
     parser.add_argument('--save-interval', default=10, type=int,
         help='number of epochs between saving intermediate outputs')
+    parser.add_argument('--weighted-cost', action='store_true',
+        help='weight the costs by the individual pixel weights')
     parser.add_argument('--network', default='IBDPairConvAe',
         choices=[
             'IBDPairConvAe',
@@ -65,33 +48,32 @@ def setup_parser():
     parser.add_argument('--accidental-fraction', type=float, default=0,
         help='fraction of train, test, and val sets that are' +
         ' intentionally accidentals')
+    parser.add_argument('--accidental-location', default=None,
+        help='file path of accidentals h5 file')
     return parser
 
-def make_accidentals(only_charge, fraction, *datasets):
-    '''Scramble a given fraction of events in datasets to make them
-    "accidental" background.
-
-    Accomplish this task by shuffling prompt signals (charge and possibly time,
-    depending on the value of only_charge) to produce uncorrelated hit
-    patterns.
-
-    This method assumes the following shape for supplied data: (batch, [prompt
-    charge, prompt time, delayed charge, delayed time], x, y).'''
-    if fraction == 0:
-        return
-    for data in datasets:
-        totalentries = data.shape[0]
-        num_scrambled = int(np.ceil(totalentries * fraction))
-        toscramble = np.random.permutation(totalentries)[:num_scrambled]
-        scrambledestinations = np.random.permutation(toscramble)
-        data[scrambledestinations, 0] = data[toscramble, 0]
-        if not only_charge:  # then also scramble time
-            data[scrambledestinations, 1] = data[toscramble, 1]
-        return
-
 if __name__ == "__main__":
+    import argparse
+    import logging
+    logging.basicConfig(format='%(levelname)s:\t%(message)s')
     parser = setup_parser()
     args = parser.parse_args()
+    import numpy as np
+    import os
+    import pickle
+    import sys
+    import h5py
+    import matplotlib
+    from sklearn.manifold import TSNE
+    import numpy as np
+    matplotlib.use('agg')
+    from matplotlib import pyplot as plt
+    from sklearn.decomposition import PCA
+    from vis.viz import Viz
+    from util.data_loaders import load_ibd_pairs, get_ibd_data
+    from util.helper_fxns import make_accidentals
+    from networks.LasagneConv import IBDPairConvAe, IBDPairConvAe2
+    from networks.LasagneConv import IBDChargeDenoisingConvAe
 
     make_progress_plots = False
     if args.verbose == 0:
@@ -109,16 +91,30 @@ if __name__ == "__main__":
     logging.info('Constructing untrained ConvNet of class %s', args.network)
     convnet_class = eval(args.network)
     cae = convnet_class(bottleneck_width=args.bottleneck_width,
-        epochs=args.epochs, learn_rate=args.learn_rate)
+        epochs=args.epochs, learn_rate=args.learn_rate,
+        weighted_cost=args.weighted_cost)
     if args.load_model:
         logging.info('Loading model parameters from file %s', args.load_model)
         cae.load(args.load_model)
     logging.info('Preprocessing data files')
     only_charge = getattr(cae, 'only_charge', False)
-    train, val, test = get_ibd_data(tot_num_pairs=args.numpairs,
-        just_charges=only_charge)
-    # Scramble data to artificially introduce accidental background
-    make_accidentals(only_charge, args.accidental_fraction, train, val, test)
+    num_ibds = int(round((1 - args.accidental_fraction) * args.numpairs))
+    train, val, test = get_ibd_data(tot_num_pairs=num_ibds,
+        just_charges=only_charge, train_frac=1, valid_frac=0)
+    if args.accidental_fraction > 0:
+        num_accidentals = args.numpairs - num_ibds
+        if args.accidental_location is None:
+            path='/global/homes/s/skohn/ml/dayabay-data-conversion/extract_accidentals/accidentals3.h5'
+        else:
+            path = args.accidental_location
+        dsetname='accidentals_bg_data'
+        train_acc, val_acc, test_acc = get_ibd_data(
+                path=path, tot_num_pairs=num_accidentals,
+                just_charges=only_charge, h5dataset=dsetname,
+                train_frac=1, valid_frac=0)
+        train = np.vstack((train, train_acc))
+        val = np.vstack((val, val_acc))
+        test = np.vstack((test, test_acc))
     preprocess = cae.preprocess_data(train)
     preprocess(val)
     preprocess(test)
@@ -220,8 +216,13 @@ if __name__ == "__main__":
 
     if args.save_prediction is not None:
         logging.info('Saving autoencoder output')
-        outdata = np.vstack((cae.predict(train)[1], cae.predict(val)[1],
-            cae.predict(test)[1]))
+        train_cost_prediction = cae.predict(train)
+        val_cost_prediction = cae.predict(val)
+        test_cost_prediction = cae.predict(test)
+        outdata = np.vstack((train_cost_prediction[1], val_cost_prediction[1],
+            test_cost_prediction[1]))
+        outcosts = np.vstack((train_cost_prediction[0], val_cost_prediction[0],
+            test_cost_prediction[0]))
         indata = np.vstack((train, val, test))
         filename = os.path.join(args.out_dir, args.save_prediction)
         outfile = h5py.File(filename, 'w')
@@ -229,3 +230,6 @@ if __name__ == "__main__":
             compression="gzip", chunks=True)
         outdset = outfile.create_dataset("ibd_pair_predictions", data=outdata,
             compression="gzip", chunks=True)
+        costdset = outfile.create_dataset("costs", data=outcosts,
+            compression="gzip", chunks=True)
+        outfile.close()

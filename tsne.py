@@ -34,16 +34,34 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--condition', nargs='*',
         help='the name(s) of the condition(s) to use to split/color the' +
         ' data points')
+    parser.add_argument('--accidental-fraction', type=float, default=0,
+        help='fraction of events to load that are accidentals')
+    parser.add_argument('--ibd-h5-path', default=None,
+        help='location of IBDs to load (default = "data loader" default)')
+    parser.add_argument('--accidental-h5-path', default=None,
+        help='location of accidentals to load (required if accidental-fraction > 0)')
     args = parser.parse_args()
-
+    # do an extra layer of parsing for accidental-h5-path
+    if args.accidental_fraction > 0 and args.accidental_h5_path is None:
+        raise ValueError('must specify --accidental-h5-path')
 
     cae = IBDChargeDenoisingConvAe(bottleneck_width=args.bottleneck_width,
         minibatch_size=args.minibatch_size)
     cae.load(args.model)
     tot_num_pairs = args.minibatch_size * args.num_batches
-    load the data
-    data, _, _ = get_ibd_data(tot_num_pairs=tot_num_pairs, just_charges=True,
+    num_ibds = int(round((1 - args.accidental_fraction) * tot_num_pairs))
+    num_accidentals = tot_num_pairs - num_ibds
+    # load the data
+    data, _, _ = get_ibd_data(tot_num_pairs=num_ibds, just_charges=True,
         train_frac=1, valid_frac=0)
+    ids = np.zeros((data.shape[0]))
+    if num_accidentals > 0:
+        acc_data, _, _ = get_ibd_data(tot_num_pairs=num_accidentals,
+            just_charges=True, train_frac=1, valid_frac=0,
+            path=args.accidental_h5_path,
+            h5dataset='accidentals_bg_data')
+        data = np.vstack((data, acc_data))
+        ids = np.hstack((ids, np.ones((acc_data.shape[0]))))
 
     Get bottleneck layer output for each set
     preprocess = cae.preprocess_data(data)
@@ -58,26 +76,9 @@ if __name__ == '__main__':
     set up different colors
     conditions = {}
     def isaccidental(batch):
-        '''Approximate isaccidental based on the distance between max pixels.'''
-        flat_ish = batch.reshape(batch.shape[0], batch.shape[1], -1)
-        maxes = flat_ish.argmax(axis=2)
-        flat_indexes = np.unravel_index(maxes.flat, (batch.shape[2],
-            batch.shape[3]))
-        The goal is to have an array with contents
-        [
-            [   [prompt_x, prompt_y],
-                [delayed_x, delayed_y],
-                (etc. over all channels)   ],
-        ...
-        ]
-        (or perhaps more 
-        flat_index_pairs = np.vstack(flat_indexes).T.reshape(
-            batch.shape[0], batch.shape[1], 2)
-        distances = np.hypot(
-            flat_index_pairs[:, :, 0],
-            flat_index_pairs[:, :, 1])
-        return np.fabs(distances[:, 0] - distances[:, 1]) > 5
-
+        '''Return an array of bools which are True if the corresponding image
+        is an accidental event.'''
+        return ids == 1
 
     conditions['accidental'] = isaccidental
 
@@ -91,9 +92,10 @@ if __name__ == '__main__':
         for condition in args.condition:
             f = conditions[condition]
             mask = f(data)
-            plt.plot(result[mask, 0], result[mask, 1], 'ro')
             plt.plot(result[~mask, 0], result[~mask, 1], 'bo')
-            plt.legend([condition, 'not %s' % condition])
+            plt.plot(result[mask, 0], result[mask, 1], 'ro')
+            plt.legend(['not %s' % condition, condition])
+            print "saving plot"
             plt.savefig(condition + args.output)
 
     if args.save_data is not None:

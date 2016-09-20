@@ -10,13 +10,15 @@ import logging
 logging.getLogger().setLevel(logging.DEBUG)
 sys.path.append(os.path.abspath('../util'))
 sys.path.append(os.path.abspath('../networks'))
-from data_loaders import load_ibd_pairs, load_predictions
+from data_loaders import load_ibd_pairs, get_ibd_data, load_predictions
 from LasagneConv import IBDPairConvAe, IBDPairConvAe2
 from LasagneConv import IBDChargeDenoisingConvAe
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--file', default=None, help='file to read')
+    parser.add_argument('--dset', default='ibd_pair_inputs',
+        help='name of dset to read in for inputs')
     parser.add_argument('-e', '--event', default=0, type=int,
         help='event index to read')
     gp = parser.add_mutually_exclusive_group(required=True)
@@ -24,7 +26,7 @@ if __name__ == '__main__':
         help='interpret the file as input')
     gp.add_argument('-o', '--output', action='store_true',
         help='interpret the file as output')
-    gp.add_argument('--custom-input', action='store_true',
+    gp.add_argument('--custom-input', default='ibd_pair_inputs',
         help='read in custom input from the given h5' +
         ' file, dset=ibd_pair_inputs')
     parser.add_argument('--flex-color', action='store_true',
@@ -64,8 +66,8 @@ if __name__ == '__main__':
     else:
         infile = args.file
     if args.input:
-        data, _, _ = load_ibd_pairs(infile, train_frac=1, valid_frac = 0,
-            tot_num_pairs=num_pairs)
+        data, _, _ = get_ibd_data(infile, train_frac=1, valid_frac = 0,
+            tot_num_pairs=num_pairs, h5dataset=args.dset)
         if args.preprocess is not None:
             conv_class = eval(args.preprocess)
             cae = conv_class()
@@ -73,7 +75,7 @@ if __name__ == '__main__':
     elif args.output:
         data = load_predictions(infile, tot_num_pairs=num_pairs)
     elif args.custom_input:
-        data = h5py.File(infile)['ibd_pair_inputs']
+        data = h5py.File(infile, 'r')[args.custom_input]
 
     if args.save is None:
         args.num_events = 1

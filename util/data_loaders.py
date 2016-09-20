@@ -6,7 +6,8 @@ import pickle
 import glob
 import os
 from operator import mul
-def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, tot_num_pairs=-1):
+def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, tot_num_pairs=-1,
+        h5dataset='ibd_pair_data'):
     '''Load up the hdf5 file given into a set of numpy arrays suitable for
     convnets.
 
@@ -16,7 +17,7 @@ def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, tot_num_pairs=-1):
 
     The relative size of each set can be specified in the arguments.'''
     h5file = h5py.File(path, 'r')
-    h5set = h5file['ibd_pair_data']
+    h5set = h5file[h5dataset]
     
     if tot_num_pairs == -1:
         npairs = h5set.shape[0]
@@ -41,14 +42,13 @@ def load_ibd_pairs(path, train_frac=0.5, valid_frac=0.25, tot_num_pairs=-1):
     return (train, valid, test)
 
 
-def get_ibd_data(path_prefix="/project/projectdirs/dasrepo/ibd_pairs", preprocess=False, mode='normalize',
+def get_ibd_data(path="/project/projectdirs/dasrepo/ibd_pairs/all_pairs.h5", preprocess=False, mode='normalize',
                 tot_num_pairs=-1, just_charges=False, train_frac=0.5,
-                valid_frac=0.25):
+                valid_frac=0.25, h5dataset='ibd_pair_data'):
     
-    h5filename = "all_pairs.h5"
-    train, val, test = load_ibd_pairs(path=os.path.join(path_prefix,
-        h5filename), tot_num_pairs=tot_num_pairs, train_frac=train_frac,
-        valid_frac=valid_frac)
+    train, val, test = load_ibd_pairs(path=path,
+        tot_num_pairs=tot_num_pairs, train_frac=train_frac,
+        valid_frac=valid_frac, h5dataset=h5dataset)
     #would be nice to optionally preprocess upon loading (mostly for unit testing)
     if just_charges:
         train = train[:,[0,2]]
