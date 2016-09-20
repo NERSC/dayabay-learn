@@ -75,7 +75,7 @@ if __name__ == '__main__':
     elif args.output:
         data = load_predictions(infile, tot_num_pairs=num_pairs)
     elif args.custom_input:
-        data = h5py.File(infile)['ibd_pair_inputs']
+        data = h5py.File(infile, 'r')[args.custom_input]
 
     if args.save is None:
         args.num_events = 1
