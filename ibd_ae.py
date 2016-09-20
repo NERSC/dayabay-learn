@@ -1,23 +1,4 @@
 __author__ = 'racah'
-import numpy as np
-import os
-import pickle
-import sys
-import h5py
-import matplotlib
-from sklearn.manifold import TSNE
-import numpy as np
-matplotlib.use('agg')
-from matplotlib import pyplot as plt
-from sklearn.decomposition import PCA
-from vis.viz import Viz
-from util.data_loaders import load_ibd_pairs, get_ibd_data
-from util.helper_fxns import make_accidentals
-from networks.LasagneConv import IBDPairConvAe, IBDPairConvAe2
-from networks.LasagneConv import IBDChargeDenoisingConvAe
-import argparse
-import logging
-logging.basicConfig(format='%(levelname)s:\t%(message)s')
 
 
 
@@ -72,8 +53,27 @@ def setup_parser():
     return parser
 
 if __name__ == "__main__":
+    import argparse
+    import logging
+    logging.basicConfig(format='%(levelname)s:\t%(message)s')
     parser = setup_parser()
     args = parser.parse_args()
+    import numpy as np
+    import os
+    import pickle
+    import sys
+    import h5py
+    import matplotlib
+    from sklearn.manifold import TSNE
+    import numpy as np
+    matplotlib.use('agg')
+    from matplotlib import pyplot as plt
+    from sklearn.decomposition import PCA
+    from vis.viz import Viz
+    from util.data_loaders import load_ibd_pairs, get_ibd_data
+    from util.helper_fxns import make_accidentals
+    from networks.LasagneConv import IBDPairConvAe, IBDPairConvAe2
+    from networks.LasagneConv import IBDChargeDenoisingConvAe
 
     make_progress_plots = False
     if args.verbose == 0:
